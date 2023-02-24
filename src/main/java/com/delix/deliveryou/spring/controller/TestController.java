@@ -13,8 +13,15 @@ public class TestController {
         return new ResponseEntity("1", HttpStatus.OK);
     }
 
+    // authenticated
     @PostMapping("/test2")
     public ResponseEntity test() {
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    // role USER
+    @PostMapping("/test3")
+    public ResponseEntity test3() {
         return new ResponseEntity(HttpStatus.OK);
     }
 }
