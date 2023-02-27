@@ -27,6 +27,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
+            System.out.println("-------------- header: " + request.getHeader("Host"));
             // Lấy jwt từ request
             String jwt = getJwtFromRequest(request);
 

@@ -1,11 +1,14 @@
-package com.delix.deliveryou.spring.configuration;
+package com.delix.deliveryou.spring.configuration.security;
 
 import com.delix.deliveryou.spring.configuration.JWT.filter.JWTAuthenticationFilter;
 import com.delix.deliveryou.spring.configuration.JWT.provider.JWTProvider;
 import com.delix.deliveryou.spring.services.UserService;
+import graphql.com.google.common.collect.ImmutableList;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -22,6 +25,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.session.web.http.HeaderHttpSessionStrategy;
 import org.springframework.session.web.http.HttpSessionStrategy;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -47,6 +56,8 @@ public class SecurityConfig {
 //                    response.setStatus(HttpStatus.OK.value());
 //                })
 //                .and()
+                .cors()
+                .and()
                 .authorizeHttpRequests()
                 .requestMatchers("/admin/**").hasAuthority("ADMIN")
                 .requestMatchers("/user/**").hasAuthority("USER")
@@ -56,7 +67,7 @@ public class SecurityConfig {
                 .requestMatchers("/test2").authenticated()
                 .requestMatchers("/test3").hasAuthority("USER")
                 .requestMatchers("/api/auth/**").permitAll()
-                .anyRequest().authenticated()
+                .requestMatchers("/websocket/**").permitAll()
                 .and()
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
@@ -102,4 +113,34 @@ public class SecurityConfig {
     public JWTProvider jwtProvider() {
         return new JWTProvider();
     }
+
+//    @Bean
+//    CorsConfigurationSource corsConfigurationSource() {
+//        CorsConfiguration config = new CorsConfiguration();
+////        configuration.setAllowedOrigins(Arrays.asList("http://127.0.0.1:5500"));
+////        configuration.setAllowedMethods(Arrays.asList("GET","POST"));
+//
+//        config.setAllowedOrigins(Arrays.asList("172.0.0.1:5500"));
+//        //config.setAllowCredentials(true);
+//        config.setAllowedMethods(ImmutableList.of("HEAD", "GET", "POST", "PUT", "DELETE", "PATCH"));
+//        config.setAllowedHeaders(ImmutableList.of("Authorization", "Cache-Control", "Content-Type"));
+//
+//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//        source.registerCorsConfiguration("/**", config);
+//        return source;
+//    }
+
+//@Bean
+//public FilterRegistrationBean corsFilter() {
+//    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//    CorsConfiguration config = new CorsConfiguration();
+//    config.setAllowCredentials(true);
+//    config.addAllowedOrigin("http://127.0.0.1:5500");
+//    config.setAllowedMethods(Arrays.asList("POST", "OPTIONS", "GET", "DELETE", "PUT"));
+//    config.setAllowedHeaders(Arrays.asList("X-Requested-With", "Origin", "Content-Type", "Accept", "Authorization"));
+//    source.registerCorsConfiguration("/**", config);
+//    FilterRegistrationBean bean = new FilterRegistrationBean(new CorsFilter(source));
+//    bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+//    return bean;
+//}
 }
