@@ -51,4 +51,12 @@ public class JWTUserDetails implements UserDetails {
         return true;
     }
 
+    public String getRole() {
+        return user.getRole();
+    }
+
+    public long getId() {
+        return user.getId();
+    }
+
 }

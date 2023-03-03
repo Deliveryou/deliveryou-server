@@ -16,6 +16,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalTime;
 
 public class JWTAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
@@ -27,7 +28,9 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
-            System.out.println("-------------- header: " + request.getHeader("Host"));
+            System.out.println("-------------- header (" + LocalTime.now().toString() + "): " + request.getHeader("Host"));
+            System.out.println("-------------- auth (" + LocalTime.now().toString() + "): " + request.getHeader("Authorization"));
+
             // Lấy jwt từ request
             String jwt = getJwtFromRequest(request);
 

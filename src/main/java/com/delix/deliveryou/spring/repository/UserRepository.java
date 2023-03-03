@@ -15,13 +15,13 @@ public class UserRepository {
             return null;
         //12345
         System.out.println("by id");
-        return new User(1, "Andie", "W", "0123456789", bCryptPasswordEncoder.encode("12345"), "USER");
+        return new User(1, "Andie", "W", "0858594852", bCryptPasswordEncoder.encode("123456Az"), "SHIPPER");
     }
 
     public User getUserByPhone(String phone) {
-        if (!phone.equals("0123456789"))
+        if (!phone.equals("0858594852"))
             return null;
         System.out.println("by phone");
-        return new User(1, "Andie", "W", "0123456789", bCryptPasswordEncoder.encode("12345"), "USER");
+        return new User(1, "Andie", "W", "0858594852", bCryptPasswordEncoder.encode("123456Az"), "SHIPPER");
     }
 }

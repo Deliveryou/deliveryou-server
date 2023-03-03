@@ -32,11 +32,12 @@ public class AuthenticationController {
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
+    @CrossOrigin
     @PostMapping("/login")
     public ResponseEntity login(@RequestBody LogInCarrier logInCarrier) {
         // Xác thực từ username và password.
         // START: this segment is a temporary fix for the infinite loop occurring when the wrong credentials is provided
-        UserDetails userDetails = userService.loadUserByUsername(logInCarrier.getPhone());
+        JWTUserDetails userDetails = (JWTUserDetails) userService.loadUserByUsername(logInCarrier.getPhone());
 
         if (userDetails == null || !bCryptPasswordEncoder.matches(logInCarrier.getPassword(), userDetails.getPassword())) {
 
@@ -59,10 +60,13 @@ public class AuthenticationController {
 
         return new ResponseEntity(JsonResponseBody.build(
                 "accessToken", jwt,
-                "tokenType", "Bearer"
+                "tokenType", "Bearer",
+                "userType", userDetails.getRole(),
+                "id", userDetails.getId()
         ), HttpStatus.OK);
     }
 
+    @CrossOrigin
     @PostMapping("/verifyAccessToken")
     public ResponseEntity isAccessTokenValid(@RequestBody Map<String, String> body) {
         if (body.containsKey("accessToken")) {

@@ -29,6 +29,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.Arrays;
 
@@ -48,7 +50,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         // http builder configurations for authorize requests and form login (see below)
-        http.csrf().disable()
+        http
+                .cors()
+                .and()
+                .csrf()
+                .disable()
 //                .logout()
 //                .logoutUrl("/logout")
 //                //.deleteCookies("")
@@ -56,8 +62,6 @@ public class SecurityConfig {
 //                    response.setStatus(HttpStatus.OK.value());
 //                })
 //                .and()
-                .cors()
-                .and()
                 .authorizeHttpRequests()
                 .requestMatchers("/admin/**").hasAuthority("ADMIN")
                 .requestMatchers("/user/**").hasAuthority("USER")
@@ -68,6 +72,7 @@ public class SecurityConfig {
                 .requestMatchers("/test3").hasAuthority("USER")
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/websocket/**").permitAll()
+                .requestMatchers("/send").permitAll()
                 .and()
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
@@ -113,6 +118,23 @@ public class SecurityConfig {
     public JWTProvider jwtProvider() {
         return new JWTProvider();
     }
+
+//    @Bean
+//    public WebMvcConfigurer webMvcConfigurer() {
+//        return new WebMvcConfigurer() {
+//            @Override
+//            public void addCorsMappings(CorsRegistry registry) {
+//                registry.addMapping("/**")
+//                        .allowedOrigins("*")
+//                        .allowCredentials(false)
+//                        //.maxAge(3600)
+//                        .allowedHeaders("Accept", "Content-Type", "Origin", "Authorization", "X-Auth-Token")
+//                        .exposedHeaders("X-Auth-Token", "Authorization")
+//                        .allowedMethods("POST", "GET", "DELETE", "PUT", "OPTIONS");
+//
+//            }
+//        };
+//    }
 
 //    @Bean
 //    CorsConfigurationSource corsConfigurationSource() {
