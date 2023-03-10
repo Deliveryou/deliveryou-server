@@ -3,6 +3,7 @@ package com.delix.deliveryou.spring.controller;
 import com.delix.deliveryou.carrier.LogInCarrier;
 import com.delix.deliveryou.spring.configuration.JWT.JWTUserDetails;
 import com.delix.deliveryou.spring.configuration.JWT.provider.JWTProvider;
+import com.delix.deliveryou.spring.configuration.websocket.CommunicableUserContainer;
 import com.delix.deliveryou.spring.services.UserService;
 import com.delix.deliveryou.utility.JsonResponseBody;
 import jakarta.servlet.http.HttpSession;
@@ -12,11 +13,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
 import java.util.Map;
 
 @RestController
@@ -66,12 +69,27 @@ public class AuthenticationController {
         ), HttpStatus.OK);
     }
 
+    void afterTokenVerifiedSuccessfully(long userId) {
+        UserDetails userDetails = userService.loadUserById(userId);
+
+        if (userDetails != null) {
+            Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
+    }
+
     @CrossOrigin
     @PostMapping("/verifyAccessToken")
     public ResponseEntity isAccessTokenValid(@RequestBody Map<String, String> body) {
         if (body.containsKey("accessToken")) {
             String token = body.get("accessToken");
             boolean res = tokenProvider.validateToken(token);
+
+            if (res) {
+                long id = tokenProvider.getUserIdFromJWT(token);
+                afterTokenVerifiedSuccessfully(id);
+            }
+
             return new ResponseEntity(JsonResponseBody.build(
                     "isValid", res
             ), HttpStatus.OK);
@@ -85,4 +103,15 @@ public class AuthenticationController {
         System.out.println("called");
         return new ResponseEntity(HttpStatus.OK);
     }
+
+    @Autowired
+    private CommunicableUserContainer container;
+
+    @CrossOrigin
+    @GetMapping("/add")
+    public ResponseEntity add() {
+        container.registerAsActive(1l);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
 }

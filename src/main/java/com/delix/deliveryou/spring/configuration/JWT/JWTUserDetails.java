@@ -59,4 +59,8 @@ public class JWTUserDetails implements UserDetails {
         return user.getId();
     }
 
+    public User getUserObject() {
+        return user;
+    }
+
 }

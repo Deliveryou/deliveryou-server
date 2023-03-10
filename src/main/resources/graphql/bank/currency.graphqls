@@ -1,3 +1,0 @@
-enum Currency {
-    VND, USD
-}
