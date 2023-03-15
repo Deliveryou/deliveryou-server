@@ -1,5 +1,6 @@
 package com.delix.deliveryou.spring.controller;
 
+import com.delix.deliveryou.api.locationiq.LocationIQ;
 import com.delix.deliveryou.carrier.LogInCarrier;
 import com.delix.deliveryou.spring.configuration.JWT.JWTUserDetails;
 import com.delix.deliveryou.spring.configuration.JWT.provider.JWTProvider;
@@ -112,6 +113,25 @@ public class AuthenticationController {
     public ResponseEntity add() {
         container.registerAsActive(1l);
         return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @Autowired
+    private LocationIQ locationIQ;
+
+    @CrossOrigin
+    @GetMapping("/distance")
+    public ResponseEntity getDistance(@RequestBody Map<String, String> map) {
+
+        LocationIQ.Coordinate pointA = new LocationIQ.Coordinate(
+                Double.valueOf(map.get("pointA_lat")),
+                Double.valueOf(map.get("pointA_lon"))
+        );
+        LocationIQ.Coordinate pointB = new LocationIQ.Coordinate(
+                Double.valueOf(map.get("pointB_lat")),
+                Double.valueOf(map.get("pointB_lon"))
+        );
+        double distance = locationIQ.distance(pointA, pointB);
+        return new ResponseEntity(distance, HttpStatus.OK);
     }
 
 }

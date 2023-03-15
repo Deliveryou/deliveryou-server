@@ -16,7 +16,7 @@ import java.util.UUID;
 //@NoArgsConstructor
 public class WithDraw {
 //    @Id
-//    @Column(name = "withdraw_id")
+//    @Column(name = "withdraw_id")LocationIQ
 //    private UUID withDrawId;
 //
 //    @Column(name = "amount")

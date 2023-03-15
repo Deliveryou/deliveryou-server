@@ -5,18 +5,23 @@ package com.delix.deliveryou.spring.pojo;
 //import jakarta.persistence.Id;
 //import jakarta.persistence.Table;
 
-import java.util.UUID;
+import lombok.*;
 
-//@Entity
-//@Table(name = "promotion")
+import java.time.OffsetDateTime;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Promotion {
-//    @Id
-//    @Column(name = "promotion_id")
-//    private UUID promotionId;
-//
-//    @Column(name = "name")
-//    private String name;
-//
-//    @Column(name = "discount_amount")
-//    private double discountAmount;
+    private long id;
+    private String promoCode;
+    private String description;
+
+    // eg: 0.15 = 15%
+    private float discountPercentage;
+    private double maximumDiscountAmount;
+    // delivery package must be at least [applicablePrice] to apply promotion
+    private double applicablePrice;
+    private OffsetDateTime expireDate;
 }

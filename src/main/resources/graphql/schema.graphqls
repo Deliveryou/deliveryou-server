@@ -1,5 +1,8 @@
+scalar DateTime
+
 type Query {
     userById(id: Int): User
+    applicablePromotion(userId: Int): [Promotion]
 }
 
 type User {
@@ -7,6 +10,23 @@ type User {
     firstName: String
     lastName: String
     phone: String
-    role: String
+    role: UserRole
     password: String
+    citizenId: String
+    profilePictureUrl: String
+}
+
+type UserRole {
+    id: Int,
+    name: String
+}
+
+type Promotion {
+    id: Int
+    promoCode: String
+    description: String
+    discountPercentage: Float
+    maximumDiscountAmount: Float
+    applicablePrice: Float
+    expireDate: DateTime
 }

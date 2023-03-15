@@ -1,6 +1,6 @@
 package com.delix.deliveryou.spring.configuration.JWT;
 
-import com.delix.deliveryou.spring.model.User;
+import com.delix.deliveryou.spring.pojo.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
@@ -18,7 +18,7 @@ public class JWTUserDetails implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // Mặc định mình sẽ để tất cả là ROLE_USER. Để demo cho đơn giản.
-        return Collections.singleton(new SimpleGrantedAuthority(user.getRole()));
+        return Collections.singleton(new SimpleGrantedAuthority(getRole()));
     }
 
     @Override
@@ -52,7 +52,7 @@ public class JWTUserDetails implements UserDetails {
     }
 
     public String getRole() {
-        return user.getRole();
+        return user.getRole().getName();
     }
 
     public long getId() {

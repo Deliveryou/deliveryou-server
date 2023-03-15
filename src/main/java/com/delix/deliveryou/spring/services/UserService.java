@@ -1,12 +1,11 @@
 package com.delix.deliveryou.spring.services;
-import com.delix.deliveryou.spring.model.User;
+import com.delix.deliveryou.spring.pojo.User;
 import com.delix.deliveryou.spring.configuration.JWT.JWTUserDetails;
 import com.delix.deliveryou.spring.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.stereotype.Service;
 
 @Service
