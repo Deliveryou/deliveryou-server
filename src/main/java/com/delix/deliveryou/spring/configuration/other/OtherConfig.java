@@ -15,7 +15,7 @@ public class OtherConfig {
     private DeliveryChargeAdvisor chargeAdvisor;
 
     @Bean
-    public DeliveryChargeAdvisor.Advisor deliveryChargeAdvisor() {
+    public DeliveryChargeAdvisor.Advisor chargeAdvisorInstance() {
         List<DeliveryChargeAdvisor.RushHour> rushHourList = Arrays.asList(
                 new DeliveryChargeAdvisor.RushHour(
                         LocalTime.of(6, 30, 0),

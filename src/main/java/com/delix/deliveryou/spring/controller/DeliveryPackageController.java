@@ -1,7 +1,9 @@
 package com.delix.deliveryou.spring.controller;
 
 import com.delix.deliveryou.api.locationiq.LocationIQ;
+import com.delix.deliveryou.exception.InternalServerHttpException;
 import com.delix.deliveryou.spring.component.DeliveryChargeAdvisor;
+import com.delix.deliveryou.utility.JsonResponseBody;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,18 +38,26 @@ public class DeliveryPackageController {
                     Integer.parseInt(partials[2])
                     );
 
-            double price = chargeAdvisor.getAdvisorPrice(
+            DeliveryChargeAdvisor.AdvisorResponse response = chargeAdvisor.getAdvisorPrice(
                     new LocationIQ.Coordinate(startingPoint_lat, startingPoint_lon),
                     new LocationIQ.Coordinate(destination_lat, destination_lon),
                     creationTime
                     );
 
-            return new ResponseEntity(price, httpStatus);
+            if (response == null)
+                throw new InternalServerHttpException();
+
+            return new ResponseEntity(JsonResponseBody.build(
+                    "price", response.price(),
+                    "distance", response.distance()
+            ), httpStatus);
 
         } catch (NumberFormatException | DateTimeException | NullPointerException exception) {
             httpStatus = HttpStatus.BAD_REQUEST;
+            exception.printStackTrace();
         } catch (Exception e) {
             httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+            e.printStackTrace();
         }
         return new ResponseEntity(httpStatus);
     }

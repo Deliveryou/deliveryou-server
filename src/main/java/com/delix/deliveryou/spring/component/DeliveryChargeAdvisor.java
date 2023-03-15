@@ -109,10 +109,17 @@ public class DeliveryChargeAdvisor {
     @Autowired
     private LocationIQ locationIQ;
 
+    public record AdvisorResponse(double price, double distance) {}
+
     public class Advisor {
         private Advisor() {}
 
-        // in meter
+        /**
+         *
+         * @param startingPoint
+         * @param destination
+         * @return distance between two points in meters
+         */
         private double getDistance(LocationIQ.Coordinate startingPoint, LocationIQ.Coordinate destination) {
             return locationIQ.distance(
                     new LocationIQ.Coordinate(
@@ -125,8 +132,8 @@ public class DeliveryChargeAdvisor {
                     ));
         }
 
-        public double getAdvisorPrice(LocationIQ.Coordinate startingPoint, LocationIQ.Coordinate destination, LocalTime creationTime) {
-            final double ERROR_VALUE = -1;
+        public AdvisorResponse getAdvisorPrice(LocationIQ.Coordinate startingPoint, LocationIQ.Coordinate destination, LocalTime creationTime) {
+            final AdvisorResponse ERROR_VALUE = null;
 
             try {
                 if (startingPoint == null || destination == null || creationTime == null)
@@ -136,6 +143,7 @@ public class DeliveryChargeAdvisor {
                 if (distance == -1)
                     return ERROR_VALUE;
 
+                double originalDistance = distance;
                 double calculatePrice = 0;
 
                 // platform fee
@@ -150,12 +158,12 @@ public class DeliveryChargeAdvisor {
                     double otherKm = distance / 1000;
                     calculatePrice += config.pricePerEveryOtherKm * otherKm;
                 } else
-                    return calculatePrice;
+                    return new AdvisorResponse(calculatePrice, originalDistance);
 
                 // additional fee during rush hour
                 List<RushHour> rushHours = config.getRushHours();
                 if (rushHours.size() == 0)
-                    return calculatePrice;
+                    return new AdvisorResponse(calculatePrice, originalDistance);
 
                 for (RushHour r : rushHours) {
                     if (r.inRushHour(creationTime)) {
@@ -163,7 +171,7 @@ public class DeliveryChargeAdvisor {
                         break;
                     }
                 }
-                return calculatePrice;
+                return new AdvisorResponse(calculatePrice, originalDistance);
             } catch (Exception e) {
                 return ERROR_VALUE;
             }

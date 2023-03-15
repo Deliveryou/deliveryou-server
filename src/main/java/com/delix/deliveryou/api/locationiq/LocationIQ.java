@@ -15,11 +15,12 @@ public class LocationIQ {
         RestTemplate restTemplate = new RestTemplate();
         String endpoint = String.format("https://us1.locationiq.com/v1/directions/driving/%s,%s" +
                 ";%s,%s?key=%s&steps=true&alternatives=true&geometries=polyline&overview=full",
-                startingPoint.lat, startingPoint.lon, destination.lat, destination.lon, API_KEY);
-        Direction direction = restTemplate.getForObject(endpoint, Direction.class);
+                startingPoint.lon, startingPoint.lat, destination.lon, destination.lat, API_KEY);
         try {
+            Direction direction = restTemplate.getForObject(endpoint, Direction.class);
             return direction.getRoutes().get(0).distance;
         } catch (Exception e) {
+            e.printStackTrace();
             return -1;
         }
     }
