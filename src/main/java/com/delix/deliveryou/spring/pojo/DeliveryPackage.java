@@ -1,9 +1,7 @@
 package com.delix.deliveryou.spring.pojo;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import lombok.*;
 
 import java.time.OffsetDateTime;
 
@@ -11,6 +9,7 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 @Getter
 @Setter
+@ToString
 public class DeliveryPackage {
     private long id;
     private User user;
@@ -20,10 +19,9 @@ public class DeliveryPackage {
     private double price;
     private Address senderAddress;
     private Address recipientAddress;
-    private Address recipientName;
-    private Address recipientPhone;
+    private String recipientName;
+    private String recipientPhone;
     private String note;
     private PackageType packageType;
-
     private OffsetDateTime creationDate;
 }

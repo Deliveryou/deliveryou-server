@@ -16,6 +16,7 @@ public class User {
     private UserRole role;
     private String citizenId;
     private String profilePictureUrl;
+    private MatchingReferences matchingReferences;
     private boolean deleted = false;
 
 }

@@ -1,9 +1,6 @@
 package com.delix.deliveryou.spring.pojo;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,6 +9,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Getter
 @Setter
+@ToString
 public class UserRole {
     public static final UserRole USER = new UserRole(1l, "USER");
     public static final UserRole SHIPPER = new UserRole(2l, "SHIPPER");

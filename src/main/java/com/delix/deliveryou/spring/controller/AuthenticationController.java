@@ -98,6 +98,8 @@ public class AuthenticationController {
         return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
 
+
+
     @CrossOrigin
     @PostMapping("auth-test")
     public ResponseEntity test() {

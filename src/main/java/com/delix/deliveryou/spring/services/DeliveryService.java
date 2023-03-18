@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class DeliveryPackageService {
+public class DeliveryService {
     @Autowired
     private DeliveryPackageRepository packageRepository;
 
@@ -17,4 +17,9 @@ public class DeliveryPackageService {
     public DeliveryPackage getPackage(long deliveryPackageId) {
         return packageRepository.getPackage(deliveryPackageId);
     }
+
+    public boolean verifyPackage(long id) {
+        return packageRepository.verifyPackage(id);
+    }
+
 }

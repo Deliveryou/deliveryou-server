@@ -1,20 +1,15 @@
 package com.delix.deliveryou.spring.component;
 
 import com.delix.deliveryou.api.locationiq.LocationIQ;
-import com.delix.deliveryou.exception.InvalidJsonBodyException;
-import com.delix.deliveryou.spring.pojo.DeliveryPackage;
-import com.delix.deliveryou.spring.services.DeliveryPackageService;
-import jakarta.annotation.PostConstruct;
+import com.delix.deliveryou.spring.services.DeliveryService;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.management.RuntimeErrorException;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Component
@@ -105,7 +100,7 @@ public class DeliveryChargeAdvisor {
     private Config config;
     private static Advisor advisor;
     @Autowired
-    private DeliveryPackageService packageService;
+    private DeliveryService packageService;
     @Autowired
     private LocationIQ locationIQ;
 

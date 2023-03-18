@@ -62,6 +62,7 @@ public class UserRepository {
             return null;
     }
 
+    @Deprecated
     public boolean isUser(long userId) {
         try {
             return getUserById(userId).getRole() == UserRole.USER;
@@ -69,4 +70,31 @@ public class UserRepository {
             return false;
         }
     }
+
+    @Deprecated
+    public boolean isShipper(long userId) {
+        try {
+            return getUserById(userId).getRole() == UserRole.SHIPPER;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Deprecated
+    public boolean isAdmin(long userId) {
+        try {
+            return getUserById(userId).getRole() == UserRole.ADMIN;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean assertRole(long userId, UserRole role) {
+        try {
+            return getUserById(userId).getRole() == role;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 }

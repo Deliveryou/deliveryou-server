@@ -13,6 +13,7 @@ import java.time.OffsetDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class Promotion {
     private long id;
     private String promoCode;

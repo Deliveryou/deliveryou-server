@@ -25,7 +25,9 @@ public class PromotionRepository {
     }};
 
     public Promotion getPromotion(long id) {
-        return promotionMockData.get((int) id);
+        if (id < 1 || id > promotionMockData.size())
+            return null;
+        return promotionMockData.get(((int) id) - 1);
     }
 
     public boolean doesPromotionExist(long promotionId) {

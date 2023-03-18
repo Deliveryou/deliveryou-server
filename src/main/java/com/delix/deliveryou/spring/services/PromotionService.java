@@ -1,6 +1,7 @@
 package com.delix.deliveryou.spring.services;
 
 import com.delix.deliveryou.spring.pojo.Promotion;
+import com.delix.deliveryou.spring.pojo.User;
 import com.delix.deliveryou.spring.repository.PromotionRepository;
 import com.delix.deliveryou.spring.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,5 +38,9 @@ public class PromotionService {
                 .stream()
                 .filter(promotion -> canApplyPromotion(userId, promotion.getId()))
                 .toList();
+    }
+
+    public Promotion loadPromotion(long id) {
+        return promotionRepository.getPromotion(id);
     }
 }

@@ -1,6 +1,7 @@
 package com.delix.deliveryou.spring.services;
 import com.delix.deliveryou.spring.pojo.User;
 import com.delix.deliveryou.spring.configuration.JWT.JWTUserDetails;
+import com.delix.deliveryou.spring.pojo.UserRole;
 import com.delix.deliveryou.spring.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -32,6 +33,12 @@ public class UserService implements UserDetailsService {
         return new JWTUserDetails(user);
     }
 
+    /**
+     *
+     * @param id: user id
+     * @return JWTUserDetails castable UserDetails
+     * @throws UsernameNotFoundException if the id is invalid
+     */
     public UserDetails loadUserById(Long id) {
         //UserDetails userDetails = inMemoryUserDetailsManager.loadUserByUsername(phone);
 
@@ -43,5 +50,30 @@ public class UserService implements UserDetailsService {
         return new JWTUserDetails(user);
     }
 
+    public boolean isRegularUser(long id) {
+        return userRepository.isUser(id);
+    }
+
+    public boolean isShipper(long id) {
+        return userRepository.isShipper(id);
+    }
+
+    public boolean isAdmin(long id) {
+        return userRepository.isAdmin(id);
+    }
+
+    /**
+     *
+     * @param userId
+     * @param role
+     * @return a boolean value indicates if (userId) has its role as (role).
+     * @throws NullPointerException if (role) is null
+     */
+    public boolean assertRole(long userId, UserRole role) {
+        if (role == null)
+            throw new NullPointerException();
+
+        return userRepository.assertRole(userId, role);
+    }
 
 }
