@@ -1,9 +1,6 @@
 package com.delix.deliveryou.spring.pojo;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 
 /**
@@ -14,6 +11,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
+@EqualsAndHashCode
 public class MatchingReferences {
     long id;
     double matchingRadius;

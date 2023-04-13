@@ -23,7 +23,7 @@ public class WebSocketTest {
     @GetMapping("/send")
     public ResponseEntity send() {
         String user = SecurityContextHolder.getContext().getAuthentication().getName();
-        messagingTemplate.convertAndSendToUser("andie", "/notification", "data13142");
+        messagingTemplate.convertAndSendToUser("1", "/notification", "data13142");
         return new ResponseEntity(HttpStatus.OK);
     }
 

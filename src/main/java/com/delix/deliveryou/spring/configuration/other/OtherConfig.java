@@ -1,6 +1,9 @@
 package com.delix.deliveryou.spring.configuration.other;
 
 import com.delix.deliveryou.spring.component.DeliveryChargeAdvisor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,5 +45,12 @@ public class OtherConfig {
                 .setRushHours(rushHourList);
 
         return chargeAdvisor.setConfig(config);
+    }
+
+    @Bean
+    public ObjectMapper JacksonObjectWriter() {
+        var objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        return objectMapper;
     }
 }

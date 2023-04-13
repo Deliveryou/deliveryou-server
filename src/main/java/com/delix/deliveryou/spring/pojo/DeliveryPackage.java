@@ -1,5 +1,6 @@
 package com.delix.deliveryou.spring.pojo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import lombok.*;
 
@@ -24,4 +25,5 @@ public class DeliveryPackage {
     private String note;
     private PackageType packageType;
     private OffsetDateTime creationDate;
+    private PackageDeliveryStatus status = PackageDeliveryStatus.PENDING;
 }

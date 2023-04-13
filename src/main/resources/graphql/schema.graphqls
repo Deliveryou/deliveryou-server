@@ -1,8 +1,11 @@
 scalar DateTime
+scalar Date
 
 type Query {
     userById(id: Int): User
     applicablePromotion(userId: Int): [Promotion]
+#    allChatSessions(userId: Int): [ChatSession]
+    chatSession(userId: Int, shipperId: Int): ChatSession
 }
 
 type User {
@@ -14,6 +17,7 @@ type User {
     password: String
     citizenId: String
     profilePictureUrl: String
+    dateOfBirth: Date
 }
 
 type UserRole {
@@ -29,4 +33,41 @@ type Promotion {
     maximumDiscountAmount: Float
     applicablePrice: Float
     expireDate: DateTime
+}
+
+type ChatSession {
+    user: User
+    shipper: User
+    channelUrl: String
+    firstCreated: DateTime
+}
+
+type PackageType {
+    id: Int,
+    name: String
+}
+
+type Address {
+    id: Int
+    latitude: Float
+    longitude: Float
+    displayName: String
+    country: String
+    countryCode: String
+}
+
+type DeliveryPackage {
+    id: Int
+    user: User
+    shipper: User
+    photoUrl: String
+    promotion: Promotion
+    price: Float
+    senderAddress: Address
+    recipientAddress: Address
+    recipientName: String
+    recipientPhone: String
+    note: String
+    packageType: PackageType
+    creationDate: DateTime
 }

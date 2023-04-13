@@ -1,11 +1,14 @@
 package com.delix.deliveryou.spring.controller;
 
 import com.delix.deliveryou.api.locationiq.LocationIQ;
+import com.delix.deliveryou.api.sendbird.SendBird;
+import com.delix.deliveryou.api.sendbird.SendBirdChannel;
 import com.delix.deliveryou.exception.HttpBadRequestException;
 import com.delix.deliveryou.exception.InternalServerHttpException;
 import com.delix.deliveryou.spring.component.DeliveryChargeAdvisor;
 import com.delix.deliveryou.spring.configuration.JWT.JWTUserDetails;
 import com.delix.deliveryou.spring.pojo.*;
+import com.delix.deliveryou.spring.services.ChatService;
 import com.delix.deliveryou.spring.services.DeliveryService;
 import com.delix.deliveryou.spring.services.PromotionService;
 import com.delix.deliveryou.spring.services.UserService;
@@ -13,6 +16,7 @@ import com.delix.deliveryou.utility.JsonResponseBody;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +24,7 @@ import java.time.DateTimeException;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.function.Consumer;
 
 @RestController
 @RequestMapping("/api")
@@ -34,6 +39,12 @@ public class DeliveryPackageController {
     private LocationIQ locationIQ;
     @Autowired
     private DeliveryService packageService;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+    @Autowired
+    private ChatService chatService;
+    @Autowired
+    private SendBird sendBird;
 
     @CrossOrigin
     @PostMapping("/user/package/advisor-price")
@@ -93,7 +104,7 @@ public class DeliveryPackageController {
             ));
             PackageType packageType = PackageType.getTypeByName(deliveryPackage.getPackageType().getName());
 
-            if (promotion == null || senderAddress == null || recipientAddress == null || packageType == null)
+            if (senderAddress == null || recipientAddress == null || packageType == null)
                 throw new HttpBadRequestException();
 
             OffsetDateTime createTime = OffsetDateTime.now();
@@ -111,9 +122,125 @@ public class DeliveryPackageController {
             return new ResponseEntity(HttpStatus.OK);
 
         } catch (UsernameNotFoundException | LocationIQ.InvalidGeoParams | HttpBadRequestException  ex) {
+            ex.printStackTrace();
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         } catch (Exception ex) {
             return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @CrossOrigin
+    @GetMapping("/shared/package/get-active-package/{userId}")
+    public ResponseEntity getActivePackage(@PathVariable long userId) {
+        try {
+            var deliveryPackage = packageService.getActivePackage(userId);
+            return new ResponseEntity(deliveryPackage, HttpStatus.OK);
+        } catch (HttpBadRequestException e) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    @CrossOrigin
+    @PostMapping("/shipper/package/accept-request")
+    public ResponseEntity acceptPackageRequest(@RequestBody Map<String, String> map) {
+        try {
+            // read [packageId] and [shipperId] from request
+            long packageId = Long.parseLong(map.get("packageId"));
+            long shipperId = Long.parseLong(map.get("shipperId"));
+            // load full object from db
+            var deliveryPackage = packageService.getPackage(packageId);
+            var shipper = ((JWTUserDetails) userService.loadUserById(shipperId)).getUserObject();
+            // throw error if no id is associated with any object
+            if (deliveryPackage == null)
+                throw new HttpBadRequestException();
+            // assign shipper with the package
+            deliveryPackage.setShipper(shipper);
+            deliveryPackage.setStatus(PackageDeliveryStatus.DELIVERING);
+            // update package state/info to db
+            if (packageService.updatePackage(deliveryPackage) == null)
+                throw new InternalServerHttpException();
+
+            var chatSession = tryGetOrCreateChatSession(deliveryPackage.getUser(), shipper);
+
+            // add session to db, only add if not exist
+            var addResult = chatService.addSession(chatSession);
+
+            if (addResult == -1)
+                throw new Exception("Failed to add new chat session");
+
+            // ws: notify shipper about new package
+            messagingTemplate.convertAndSendToUser(String.valueOf(shipperId), "/notification/package", deliveryPackage);
+            messagingTemplate.convertAndSendToUser(String.valueOf(deliveryPackage.getUser().getId()), "/notification/chat", chatSession);
+
+            return new ResponseEntity(HttpStatus.OK);
+        } catch (NumberFormatException | HttpBadRequestException | UsernameNotFoundException e) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * @param user
+     * @param shipper
+     * @return a ChatSession instance if already exists, if not then create a new one, null if fails
+     */
+    private ChatSession tryGetOrCreateChatSession(User user, User shipper) {
+        var chat = chatService.getChatSession(user.getId(), shipper.getId());
+
+        if (chat != null) {
+            System.out.println("Use char session from db");
+            return chat;
+        }
+
+        final var res = new Object(){
+            ChatSession session = null;
+        };
+
+        createChatChannel(
+                user,
+                shipper,
+                responseChannel -> {
+                    res.session = new ChatSession();
+                    res.session.setUser(user);
+                    res.session.setShipper(shipper);
+                    res.session.setFirstCreated(OffsetDateTime.now());
+                    res.session.setChannelUrl(responseChannel.getChannel_url());
+                    System.out.println("[Sendbird] channel created url=" + responseChannel.getChannel_url());
+                },
+                e -> {
+                    System.out.println("[Sendbird] Cannot create chat channel");
+                    e.printStackTrace();
+                }
+        );
+
+        return res.session;
+    }
+
+    private void createChatChannel(User user, User shipper, Consumer<SendBirdChannel.ResponseChannel> onCreated, Consumer<Exception> onError) {
+
+        sendBird.createGroupChannel(
+                user,
+                shipper,
+                responseChannel -> {
+                    // channel created
+                    boolean sent = false;
+                    int attempt = 3;
+
+                    while (!sent && attempt > 0) {
+                        sent = sendBird.SendFirstMessage(responseChannel);
+                        attempt--;
+                    }
+
+                    onCreated.accept(responseChannel);
+
+                },
+                onError
+        );
+
+    }
+
 }

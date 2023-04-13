@@ -24,7 +24,7 @@ public class UserGraphqlController {
     @QueryMapping
     public User userById(@Argument Integer id) {
         User user = ((JWTUserDetails) userService.loadUserById(Long.valueOf(id))).getUserObject();
-        System.out.println("- User: " + user.toString());
+        System.out.println("---------- User GraphQL: " + user.toString());
         return user;
     }
 

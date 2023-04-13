@@ -5,15 +5,13 @@ package com.delix.deliveryou.spring.pojo;
 //import jakarta.persistence.Id;
 //import jakarta.persistence.Table;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Setter
 @Getter
+@ToString
 public class PackageDeliveryStatus {
     public static final PackageDeliveryStatus CANCELED = new PackageDeliveryStatus(1l, "CANCELED");
     public static final PackageDeliveryStatus FINISHED = new PackageDeliveryStatus(2l, "FINISHED");

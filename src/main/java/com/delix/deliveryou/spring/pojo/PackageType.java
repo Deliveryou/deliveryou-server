@@ -29,7 +29,6 @@ public class PackageType {
     public static final PackageType FRAGILE = new PackageType(4l, "Fragile");
     public static final PackageType OTHER = new PackageType(5l, "Other");
 
-
     private long id;
     private String name;
 }

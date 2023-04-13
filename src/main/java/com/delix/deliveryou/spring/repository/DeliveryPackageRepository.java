@@ -1,6 +1,7 @@
 package com.delix.deliveryou.spring.repository;
 
 import com.delix.deliveryou.spring.pojo.DeliveryPackage;
+import com.delix.deliveryou.spring.pojo.PackageDeliveryStatus;
 import org.springframework.stereotype.Repository;
 
 import java.util.HashMap;
@@ -22,5 +23,27 @@ public class DeliveryPackageRepository {
 
     public boolean verifyPackage(long id) {
         return !(id < 1 || id > deliveryPackageMockData.size());
+    }
+
+    public DeliveryPackage updatePackage(DeliveryPackage newDeliveryPackage) {
+        try {
+            if (deliveryPackageMockData.get(newDeliveryPackage.getId()) != null) {
+                deliveryPackageMockData.put(newDeliveryPackage.getId(), newDeliveryPackage);
+                return newDeliveryPackage;
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public DeliveryPackage getActivePackage(long userId) {
+        var list = deliveryPackageMockData.values();
+        for (DeliveryPackage dp : list) {
+            if (dp.getStatus() == PackageDeliveryStatus.DELIVERING && (dp.getUser().getId() == userId || dp.getShipper().getId() == userId)) {
+                return dp;
+            }
+        }
+        return null;
     }
 }
