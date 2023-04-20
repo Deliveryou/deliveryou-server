@@ -1,5 +1,6 @@
 package com.delix.deliveryou.spring.pojo;
 
+import jakarta.persistence.*;
 import lombok.*;
 
 
@@ -11,10 +12,20 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-@EqualsAndHashCode
+@Entity
+@Table(name = "matching_filter")
 public class MatchingReferences {
-    long id;
-    double matchingRadius;
-    double minimumDeliveryPrice;
-    double maximumDeliveryDistance;
+    @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
+
+    @Column(name = "matching_radius")
+    private double matchingRadius;
+
+    @Column(name = "minimum_delivery_price")
+    private double minimumDeliveryPrice;
+
+    @Column(name = "maximum_delivery_distance")
+    private double maximumDeliveryDistance;
 }

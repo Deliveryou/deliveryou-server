@@ -20,6 +20,7 @@ public class UserService implements UserDetailsService {
 //    private InMemoryUserDetailsManager inMemoryUserDetailsManager;
     @Autowired
     private UserRepository userRepository;
+
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 

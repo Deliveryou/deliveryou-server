@@ -95,12 +95,12 @@ public class DeliveryPackageController {
             User sender = ((JWTUserDetails) userService.loadUserById(deliveryPackage.getUser().getId())).getUserObject();
             Promotion promotion = promotionService.loadPromotion(deliveryPackage.getPromotion().getId());
             Address senderAddress = locationIQ.reverseGeo(new LocationIQ.Coordinate(
-                        deliveryPackage.getSenderAddress().getLatitude(),
-                        deliveryPackage.getSenderAddress().getLongitude()
-                    ));
+                    Double.parseDouble(deliveryPackage.getSenderAddress().getLatitude()),
+                    Double.parseDouble(deliveryPackage.getSenderAddress().getLongitude())
+            ));
             Address recipientAddress = locationIQ.reverseGeo(new LocationIQ.Coordinate(
-                    deliveryPackage.getRecipientAddress().getLatitude(),
-                    deliveryPackage.getRecipientAddress().getLongitude()
+                    Double.parseDouble(deliveryPackage.getRecipientAddress().getLatitude()),
+                    Double.parseDouble(deliveryPackage.getRecipientAddress().getLongitude())
             ));
             PackageType packageType = PackageType.getTypeByName(deliveryPackage.getPackageType().getName());
 

@@ -1,34 +1,83 @@
 package com.delix.deliveryou.spring.pojo;
 
+import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
+@Entity
+@Table(name = "package_type")
 public class PackageType {
-    public static PackageType getTypeByName(String packageTypeName) {
-        if (packageTypeName == null || packageTypeName.trim().length() < 4)
-            return null;
-        packageTypeName = packageTypeName.trim();
-        packageTypeName = packageTypeName.toLowerCase();
-        packageTypeName = String.valueOf(packageTypeName.charAt(0)).toUpperCase() + packageTypeName.substring(1);
 
-        switch (packageTypeName) {
-            case "Food": return FOOD;
-            case "Clothing": return CLOTHING;
-            case "Electronics": return ELECTRONICS;
-            case "Fragile": return FRAGILE;
-            case "Other": return OTHER;
-            default: return null;
-        }
-    }
-    public static final PackageType FOOD = new PackageType(1l, "Food");
-    public static final PackageType CLOTHING = new PackageType(2l, "Clothing");
-    public static final PackageType ELECTRONICS = new PackageType(3l, "Electronics");
-    public static final PackageType FRAGILE = new PackageType(4l, "Fragile");
-    public static final PackageType OTHER = new PackageType(5l, "Other");
+    private static Map<Long, PackageType> packageTypeMapById = new HashMap<>();
+    private static Map<String, PackageType> packageTypeMapByName = new HashMap<>();
 
+    @Transient
+    public static PackageType FOOD;
+    @Transient
+    public static PackageType CLOTHING;
+    @Transient
+    public static PackageType ELECTRONICS;
+    @Transient
+    public static PackageType FRAGILE;
+    @Transient
+    public static PackageType OTHER;
+
+
+    @Id
+    @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
+
+    @Column(name = "name")
     private String name;
+
+    @OneToMany(mappedBy = "packageType")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private Set<DeliveryPackage> deliveryPackages = new HashSet<>();
+
+    public PackageType getOTHER() {
+        return OTHER;
+    }
+
+    public PackageType getFRAGILE() {
+        return FRAGILE;
+    }
+
+    public PackageType getELECTRONICS() {
+        return ELECTRONICS;
+    }
+
+    public PackageType getCLOTHING() {
+        return CLOTHING;
+    }
+
+    public PackageType getFOOD() {
+        return FOOD;
+    }
+
+    @PostLoad
+    public void postLoad(){
+        packageTypeMapById.put(id, this);
+        packageTypeMapByName.put(name, this);
+        FOOD = getTypeById(1l);
+        CLOTHING = getTypeById(2l);
+        ELECTRONICS = getTypeById(3l);
+        FRAGILE = getTypeById(4l);
+        OTHER = getTypeById(5l);
+        System.out.println("PackageType database called");
+    }
+
+    public static PackageType getTypeById(long id){
+        return packageTypeMapById.get(id);
+    }
+    public static PackageType getTypeByName(String name){return packageTypeMapByName.get(name);}
 }

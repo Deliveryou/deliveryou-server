@@ -67,7 +67,7 @@ public class LocationIQ {
                     API_KEY, coordinate.lat(), coordinate.lon());
 
             LocationIQData data = restTemplate.getForObject(endpoint, LocationIQData.class);
-            Address address = new Address(0, data.lat, data.lon, data.display_name,
+            Address address = new Address(data.lat, data.lon, data.display_name,
                     data.address.country, data.address.country_code);
             return address;
         } catch (IllegalFormatException ex) {
