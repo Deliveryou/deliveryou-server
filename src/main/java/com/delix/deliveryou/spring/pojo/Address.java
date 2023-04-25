@@ -1,28 +1,68 @@
 package com.delix.deliveryou.spring.pojo;
 
-//import jakarta.persistence.Column;
-//import jakarta.persistence.Entity;
-//import jakarta.persistence.Id;
-//import jakarta.persistence.Table;
+
+import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
+
 
 
 @Data
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
+@Entity
+@Table(name = "address")
 public class Address {
-    private long id;
-    private double latitude;
-    private double longitude;
+    @Id
+    @Column(name = "address_id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long addressId;
+
+    @Column(name = "longitude")
+    private String longitude;
+
+    @Column(name = "latitude")
+    private String latitude;
+
+//    @Column(name = "street")
 //    private String street;
+//
+//    @Column(name = "ward")
 //    private String ward;
+//
+//    @Column(name = "district")
 //    private String district;
+//
+//    @Column(name = "province")
 //    private String province;
+
+    @Column(name = "display_name")
     private String displayName;
+
+    @Column(name = "country")
     private String country;
+
+    @Column(name = "country_code")
     private String countryCode;
 
+    @OneToMany(mappedBy = "senderAddress")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private final Set<DeliveryPackage> deliveryPackages1 = new HashSet<>();
+
+    @OneToMany(mappedBy = "recipientAddress")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private final Set<DeliveryPackage> deliveryPackages2 = new HashSet<>();
+
+    public Address(double lat, double lon, String display_name, String country, String country_code) {
+        this.longitude = String.valueOf(lon);
+        this.latitude = String.valueOf(lat);
+        this.displayName = display_name;
+        this.country = country;
+        this.countryCode = country_code;
+    }
 }
