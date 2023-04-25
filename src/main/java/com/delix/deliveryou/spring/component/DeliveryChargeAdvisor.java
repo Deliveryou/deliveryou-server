@@ -176,6 +176,9 @@ public class DeliveryChargeAdvisor {
             return DeliveryChargeAdvisor.this;
         }
 
+        public Config getAdvisorConfig() {
+            return config;
+        }
     }
 
     public Advisor setConfig(Config config) {

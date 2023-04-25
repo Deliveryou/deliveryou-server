@@ -8,10 +8,7 @@ import com.delix.deliveryou.carrier.LogInCarrier;
 import com.delix.deliveryou.spring.configuration.JWT.JWTUserDetails;
 import com.delix.deliveryou.spring.configuration.JWT.provider.JWTProvider;
 import com.delix.deliveryou.spring.configuration.websocket.CommunicableUserContainer;
-import com.delix.deliveryou.spring.pojo.ChatSession;
-import com.delix.deliveryou.spring.pojo.DeliveryPackage;
-import com.delix.deliveryou.spring.pojo.PackageType;
-import com.delix.deliveryou.spring.pojo.User;
+import com.delix.deliveryou.spring.pojo.*;
 import com.delix.deliveryou.spring.services.ChatService;
 import com.delix.deliveryou.spring.services.DeliveryService;
 import com.delix.deliveryou.spring.services.UserService;
@@ -52,38 +49,66 @@ public class AuthenticationController {
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
+    private ResponseEntity doLogin(LogInCarrier logInCarrier, boolean asAdmin) {
+        // Xác thực từ username và password.
+        // START: this segment is a temporary fix for the infinite loop occurring when the wrong credentials is provided
+        try {
+            JWTUserDetails userDetails = (JWTUserDetails) userService.loadUserByUsername(logInCarrier.getPhone());
+
+            if (userDetails == null || !bCryptPasswordEncoder.matches(logInCarrier.getPassword(), userDetails.getPassword())) {
+                return new ResponseEntity(JsonResponseBody.build(
+                        "Error", "Authentication failed"
+                ), HttpStatus.UNAUTHORIZED);
+            }
+
+            if (asAdmin) {
+                if (userDetails.getUserObject().getRole().getId() != UserRole.ADMIN.getId())
+                    return new ResponseEntity(JsonResponseBody.build(
+                            "Error", "Only allow authentication as [Admin]"
+                    ), HttpStatus.UNAUTHORIZED);
+            } else {
+                if (userDetails.getUserObject().getRole().getId() == UserRole.ADMIN.getId())
+                    return new ResponseEntity(JsonResponseBody.build(
+                            "Error", "Only allow authentication as [Shipper/RegularUser]"
+                    ), HttpStatus.UNAUTHORIZED);
+            }
+
+            // END
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            logInCarrier.getPhone(),
+                            logInCarrier.getPassword()
+                    )
+            );
+            // Nếu không xảy ra exception tức là thông tin hợp lệ
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            // Trả về jwt cho người dùng.
+            String jwt = tokenProvider.generateToken((JWTUserDetails) authentication.getPrincipal());
+
+            return new ResponseEntity(JsonResponseBody.build(
+                    "accessToken", jwt,
+                    "tokenType", "Bearer",
+                    "userType", userDetails.getRole(),
+                    "id", userDetails.getId()
+            ), HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity(JsonResponseBody.build(
+                    "Error", "Authentication failed: internal error"
+            ), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @CrossOrigin
     @PostMapping("/login")
     public ResponseEntity login(@RequestBody LogInCarrier logInCarrier) {
-        // Xác thực từ username và password.
-        // START: this segment is a temporary fix for the infinite loop occurring when the wrong credentials is provided
-        JWTUserDetails userDetails = (JWTUserDetails) userService.loadUserByUsername(logInCarrier.getPhone());
+        return doLogin(logInCarrier, false);
+    }
 
-        if (userDetails == null || !bCryptPasswordEncoder.matches(logInCarrier.getPassword(), userDetails.getPassword())) {
-
-            return new ResponseEntity(JsonResponseBody.build(
-                    "Error", "Authentication failed"
-            ), HttpStatus.UNAUTHORIZED);
-        }
-
-        // END
-        Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                        logInCarrier.getPhone(),
-                        logInCarrier.getPassword()
-                    )
-            );
-        // Nếu không xảy ra exception tức là thông tin hợp lệ
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        // Trả về jwt cho người dùng.
-        String jwt = tokenProvider.generateToken((JWTUserDetails) authentication.getPrincipal());
-
-        return new ResponseEntity(JsonResponseBody.build(
-                "accessToken", jwt,
-                "tokenType", "Bearer",
-                "userType", userDetails.getRole(),
-                "id", userDetails.getId()
-        ), HttpStatus.OK);
+    @CrossOrigin
+    @PostMapping("/xn4JdnNALsjKRm/loginAsAdmin")
+    public ResponseEntity loginAsAdmin(@RequestBody LogInCarrier logInCarrier) {
+        return doLogin(logInCarrier, true);
     }
 
     void afterTokenVerifiedSuccessfully(long userId) {
@@ -238,6 +263,7 @@ public class AuthenticationController {
             var deliveryPackage = deliveryService.getPackage(1);
 
             deliveryPackage.setShipper(shipper);
+            deliveryPackage.setStatus(PackageDeliveryStatus.DELIVERING);
 
             if (deliveryService.updatePackage(deliveryPackage) == null)
                 throw new Exception("cannot update package");

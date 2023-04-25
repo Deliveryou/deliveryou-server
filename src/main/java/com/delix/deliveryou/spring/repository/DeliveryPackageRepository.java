@@ -4,7 +4,9 @@ import com.delix.deliveryou.spring.pojo.DeliveryPackage;
 import com.delix.deliveryou.spring.pojo.PackageDeliveryStatus;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Repository
@@ -45,5 +47,16 @@ public class DeliveryPackageRepository {
             }
         }
         return null;
+    }
+
+    public List<DeliveryPackage> getAllPackages(long userId) {
+        try {
+            var list = deliveryPackageMockData.values().stream()
+                            .filter(deliveryPackage -> deliveryPackage.getUser().getId() == userId)
+                            .toList();
+            return list;
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
     }
 }

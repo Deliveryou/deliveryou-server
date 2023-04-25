@@ -76,6 +76,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/user/**").authenticated()
                 .requestMatchers("/api/shared/**").authenticated()
                 .requestMatchers("/api/shipper/**").hasAuthority("SHIPPER")
+                .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
                 .requestMatchers("/websocket/**").permitAll()
                 .requestMatchers("/send").permitAll()
                 .and()
