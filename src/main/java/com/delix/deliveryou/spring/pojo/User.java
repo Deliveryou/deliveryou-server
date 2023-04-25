@@ -28,8 +28,6 @@ public class User {
     @Column(name = "last_name")
     private String lastName;
 
-    private String phone;
-
     @JsonIgnore
     @Column(name = "password")
     private String password;
