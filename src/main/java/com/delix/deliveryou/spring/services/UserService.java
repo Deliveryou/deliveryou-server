@@ -2,6 +2,8 @@ package com.delix.deliveryou.spring.services;
 import com.delix.deliveryou.exception.InsufficientArgumentException;
 import com.delix.deliveryou.exception.HttpBadRequestException;
 import com.delix.deliveryou.exception.LogicViolationException;
+import com.delix.deliveryou.spring.model.SearchFilter;
+import com.delix.deliveryou.spring.model.SearchFilterType;
 import com.delix.deliveryou.spring.pojo.User;
 import com.delix.deliveryou.spring.configuration.JWT.JWTUserDetails;
 import com.delix.deliveryou.spring.pojo.UserRole;
@@ -12,6 +14,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Collections;
+import java.util.List;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -211,6 +216,23 @@ public class UserService implements UserDetailsService {
 
         return detected;
 
+    }
+
+    // --------------------------------
+
+    public List<User> getUsersWithFilter(UserRole role, SearchFilter filter) {
+        if (role == null || filter == null)
+            return Collections.emptyList();
+
+        // normalize filter indexes
+        SearchFilterType.normalizeIndexes(filter);
+        return userRepository.getUsersWithFilter(role, filter);
+    }
+
+    public boolean markUserAsDeleted(long userId, boolean deleted) {
+        if (!idExists(userId))
+            return false;
+        return userRepository.markUserAsDeleted(userId, deleted);
     }
 
 }

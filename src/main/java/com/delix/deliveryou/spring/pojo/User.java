@@ -1,6 +1,7 @@
 package com.delix.deliveryou.spring.pojo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -17,6 +18,7 @@ public class User {
     private String firstName;
     private String lastName;
     private String phone;
+    @JsonIgnore
     private String password;
     private UserRole role;
     private String citizenId;
