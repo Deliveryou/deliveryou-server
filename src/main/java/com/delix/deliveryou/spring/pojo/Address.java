@@ -1,6 +1,7 @@
 package com.delix.deliveryou.spring.pojo;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -48,15 +49,17 @@ public class Address {
     @Column(name = "country_code")
     private String countryCode;
 
-    @OneToMany(mappedBy = "senderAddress")
-    @EqualsAndHashCode.Exclude
-    @ToString.Exclude
-    private final Set<DeliveryPackage> deliveryPackages1 = new HashSet<>();
-
-    @OneToMany(mappedBy = "recipientAddress")
-    @EqualsAndHashCode.Exclude
-    @ToString.Exclude
-    private final Set<DeliveryPackage> deliveryPackages2 = new HashSet<>();
+//    @JsonIgnore
+//    @OneToMany(mappedBy = "senderAddress")
+//    @EqualsAndHashCode.Exclude
+//    @ToString.Exclude
+//    private final Set<DeliveryPackage> deliveryPackages1 = new HashSet<>();
+//
+//    @JsonIgnore
+//    @OneToMany(mappedBy = "recipientAddress")
+//    @EqualsAndHashCode.Exclude
+//    @ToString.Exclude
+//    private final Set<DeliveryPackage> deliveryPackages2 = new HashSet<>();
 
     public Address(double lat, double lon, String display_name, String country, String country_code) {
         this.longitude = String.valueOf(lon);

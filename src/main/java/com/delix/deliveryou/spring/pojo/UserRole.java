@@ -1,5 +1,6 @@
 package com.delix.deliveryou.spring.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,47 +20,28 @@ public class UserRole {
 
     @Id
     @Column(name = "id")
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+//    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     @Column(name = "user_role_name")
     private String name;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "role")
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private Set<User> users = new HashSet<>();
 
-    @PostLoad
-    public void postLoad() {
-        rolesById.put(id, this);
-        USER = getById(1);
-        SHIPPER = getById(2);
-        ADMIN = getById(3);
-        System.out.println("Usertype database called!");
+    public UserRole(int id, String name) {
+        this.id = id;
+        this.name = name;
     }
-
-    public static UserRole getById(int id) {
-        return rolesById.get(id);
-    }
-
 
     @Transient
-    public static UserRole USER;
+    public static final UserRole USER = new UserRole(1, "USER");
     @Transient
-    public static UserRole SHIPPER;
+    public static final UserRole SHIPPER = new UserRole(2, "SHIPPER");
     @Transient
-    public static UserRole ADMIN;
+    public static final UserRole ADMIN = new UserRole(3, "ADMIN");
 
-    public UserRole getADMIN() {
-        return ADMIN;
-    }
-
-    public UserRole getUSER() {
-        return USER;
-    }
-
-    public UserRole getSHIPPER() {
-        return SHIPPER;
-    }
 }

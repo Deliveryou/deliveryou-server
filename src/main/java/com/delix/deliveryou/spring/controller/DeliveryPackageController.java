@@ -8,10 +8,7 @@ import com.delix.deliveryou.exception.InternalServerHttpException;
 import com.delix.deliveryou.spring.component.DeliveryChargeAdvisor;
 import com.delix.deliveryou.spring.configuration.JWT.JWTUserDetails;
 import com.delix.deliveryou.spring.pojo.*;
-import com.delix.deliveryou.spring.services.ChatService;
-import com.delix.deliveryou.spring.services.DeliveryService;
-import com.delix.deliveryou.spring.services.PromotionService;
-import com.delix.deliveryou.spring.services.UserService;
+import com.delix.deliveryou.spring.services.*;
 import com.delix.deliveryou.utility.JsonResponseBody;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -38,13 +35,17 @@ public class DeliveryPackageController {
     @Autowired
     private LocationIQ locationIQ;
     @Autowired
-    private DeliveryService packageService;
+    private DeliveryService deliveryService;
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
     @Autowired
     private ChatService chatService;
     @Autowired
     private SendBird sendBird;
+    @Autowired
+    private MatchingService matchingService;
+    @Autowired
+    private PackageService packageService;
 
     @CrossOrigin
     @PostMapping("/user/package/advisor-price")
@@ -62,13 +63,13 @@ public class DeliveryPackageController {
                     Integer.parseInt(partials[0]),
                     Integer.parseInt(partials[1]),
                     Integer.parseInt(partials[2])
-                    );
+            );
 
             DeliveryChargeAdvisor.AdvisorResponse response = chargeAdvisor.getAdvisorPrice(
                     new LocationIQ.Coordinate(startingPoint_lat, startingPoint_lon),
                     new LocationIQ.Coordinate(destination_lat, destination_lon),
                     creationTime
-                    );
+            );
 
             if (response == null)
                 throw new InternalServerHttpException();
@@ -92,6 +93,7 @@ public class DeliveryPackageController {
     @PostMapping("/user/package/upload")
     public ResponseEntity createPackage(@RequestBody DeliveryPackage deliveryPackage) {
         try {
+            System.out.println("result: " + deliveryPackage);
             User sender = ((JWTUserDetails) userService.loadUserById(deliveryPackage.getUser().getId())).getUserObject();
             Promotion promotion = promotionService.loadPromotion(deliveryPackage.getPromotion().getId());
             Address senderAddress = locationIQ.reverseGeo(new LocationIQ.Coordinate(
@@ -115,16 +117,24 @@ public class DeliveryPackageController {
             deliveryPackage.setRecipientAddress(recipientAddress);
             deliveryPackage.setPackageType(packageType);
             deliveryPackage.setCreationDate(createTime);
+            deliveryPackage.setStatus(PackageDeliveryStatus.PENDING);
 
             System.out.println("------ package: " + deliveryPackage);
-            packageService.savePackage(deliveryPackage);
 
-            return new ResponseEntity(HttpStatus.OK);
+            var savedPackage = deliveryService.savePackage(deliveryPackage);
 
-        } catch (UsernameNotFoundException | LocationIQ.InvalidGeoParams | HttpBadRequestException  ex) {
+            // start matching service
+            matchingService.matchPotentialDrivers(deliveryPackage);
+
+            return new ResponseEntity(JsonResponseBody.build(
+                    "packageId", savedPackage.getId()
+            ), HttpStatus.OK);
+
+        } catch (UsernameNotFoundException | LocationIQ.InvalidGeoParams | HttpBadRequestException ex) {
             ex.printStackTrace();
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         } catch (Exception ex) {
+            ex.printStackTrace();
             return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -133,15 +143,36 @@ public class DeliveryPackageController {
     @GetMapping("/shared/package/get-active-package/{userId}")
     public ResponseEntity getActivePackage(@PathVariable long userId) {
         try {
-            var deliveryPackage = packageService.getActivePackage(userId);
+            var deliveryPackage = deliveryService.getActivePackage(userId);
             return new ResponseEntity(deliveryPackage, HttpStatus.OK);
         } catch (HttpBadRequestException e) {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @CrossOrigin
+    @GetMapping("/shared/package/get-current-package/{userId}")
+    public ResponseEntity getCurrentPackage(@PathVariable long userId) {
+        try {
+            var deliveryPackage = deliveryService.getCurrentPackage(userId);
+            return new ResponseEntity(deliveryPackage, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    /**
+     * @return true the package can be assigned with a new driver
+     */
+    private boolean preAcceptValidation(long packageId) {
+        var result = packageService.canAssignDriver(packageId);
+        // notify
+
+        return result;
+    }
 
     @CrossOrigin
     @PostMapping("/shipper/package/accept-request")
@@ -150,17 +181,28 @@ public class DeliveryPackageController {
             // read [packageId] and [shipperId] from request
             long packageId = Long.parseLong(map.get("packageId"));
             long shipperId = Long.parseLong(map.get("shipperId"));
+
+            if (!preAcceptValidation(packageId)) {
+                System.out.println(">>>> [ACCEPT_REQUEST]: cannot accept request");
+                return new ResponseEntity(HttpStatus.NOT_ACCEPTABLE);
+            }
+
+            System.out.println(">>>> [ACCEPT_REQUEST]: can accept request");
+
             // load full object from db
-            var deliveryPackage = packageService.getPackage(packageId);
+            var deliveryPackage = deliveryService.getPackage(packageId);
             var shipper = ((JWTUserDetails) userService.loadUserById(shipperId)).getUserObject();
+
             // throw error if no id is associated with any object
             if (deliveryPackage == null)
                 throw new HttpBadRequestException();
+
             // assign shipper with the package
             deliveryPackage.setShipper(shipper);
-            deliveryPackage.setStatus(PackageDeliveryStatus.DELIVERING);
+//            deliveryPackage.setStatus(PackageDeliveryStatus.DELIVERING);
+
             // update package state/info to db
-            if (packageService.updatePackage(deliveryPackage) == null)
+            if (deliveryService.updatePackage(deliveryPackage) == null)
                 throw new InternalServerHttpException();
 
             var chatSession = tryGetOrCreateChatSession(deliveryPackage.getUser(), shipper);
@@ -174,6 +216,7 @@ public class DeliveryPackageController {
             // ws: notify shipper about new package
             messagingTemplate.convertAndSendToUser(String.valueOf(shipperId), "/notification/package", deliveryPackage);
             messagingTemplate.convertAndSendToUser(String.valueOf(deliveryPackage.getUser().getId()), "/notification/chat", chatSession);
+            messagingTemplate.convertAndSendToUser(String.valueOf(deliveryPackage.getUser().getId()), "/notification/package/driver-matched", "matched");
 
             return new ResponseEntity(HttpStatus.OK);
         } catch (NumberFormatException | HttpBadRequestException | UsernameNotFoundException e) {
@@ -196,7 +239,7 @@ public class DeliveryPackageController {
             return chat;
         }
 
-        final var res = new Object(){
+        final var res = new Object() {
             ChatSession session = null;
         };
 
@@ -205,8 +248,8 @@ public class DeliveryPackageController {
                 shipper,
                 responseChannel -> {
                     res.session = new ChatSession();
-                    res.session.setUser(user);
-                    res.session.setShipper(shipper);
+                    var sessionId = new ChatSessionId(user, shipper);
+                    res.session.setChatSessionId(sessionId);
                     res.session.setFirstCreated(OffsetDateTime.now());
                     res.session.setChannelUrl(responseChannel.getChannel_url());
                     System.out.println("[Sendbird] channel created url=" + responseChannel.getChannel_url());
@@ -241,6 +284,115 @@ public class DeliveryPackageController {
                 onError
         );
 
+    }
+
+    @CrossOrigin
+    @GetMapping("/shipper/package/cancel/{packageId}")
+    public ResponseEntity cancelPackageByShipper(@PathVariable long packageId) {
+        try {
+            var deliveryPackage = packageService.getPackage(packageId);
+
+            if (deliveryPackage == null)
+                throw new HttpBadRequestException();
+
+            var result = packageService.cancelPackage(packageId);
+
+            if (result) {
+                messagingTemplate.convertAndSendToUser(String.valueOf(deliveryPackage.getUser().getId()), "/notification/package/canceled", "canceled");
+                return new ResponseEntity(HttpStatus.OK);
+            } else
+                return new ResponseEntity(HttpStatus.NOT_MODIFIED);
+
+        } catch (HttpBadRequestException e) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @CrossOrigin
+    @GetMapping("/shipper/package/done/{packageId}")
+    public ResponseEntity finishDelivering(@PathVariable long packageId) {
+        try {
+            var deliveryPackage = packageService.getPackage(packageId);
+
+            if (deliveryPackage == null)
+                throw new HttpBadRequestException();
+
+            var result = packageService.finishDelivering(packageId);
+
+            if (result) {
+                messagingTemplate.convertAndSendToUser(String.valueOf(deliveryPackage.getUser().getId()), "/notification/package/finished", "finished");
+                return new ResponseEntity(HttpStatus.OK);
+            }
+            return new ResponseEntity(HttpStatus.NOT_MODIFIED);
+        } catch (HttpBadRequestException e) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @CrossOrigin
+    @PostMapping("/shared/package/history")
+    public ResponseEntity packageHistory(@RequestBody Map<String, String> map) {
+        try {
+            long userId = Long.parseLong(map.get("userId"));
+            int startIndex = Integer.parseInt(map.get("startIndex"));
+            int endIndex = Integer.parseInt(map.get("endIndex"));
+
+            if (userId < 1 || startIndex < 0 || endIndex < 0 || startIndex > endIndex)
+                throw new HttpBadRequestException();
+
+            var list = packageService.packageHistory(userId, startIndex, endIndex);
+            return new ResponseEntity(list, HttpStatus.OK);
+
+        } catch (NumberFormatException | HttpBadRequestException e) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @CrossOrigin
+    @GetMapping("/shared/package/get-package-by-id/{packageId}")
+    public ResponseEntity getPackageById(@PathVariable long packageId) {
+        try {
+            var result = packageService.getPackage(packageId);
+            if (result != null)
+                return new ResponseEntity(result, HttpStatus.OK);
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    //            deliveryPackage.setStatus(PackageDeliveryStatus.DELIVERING);
+
+    @CrossOrigin
+    @GetMapping("/shipper/package/confirm-pickup/{packageId}")
+    public ResponseEntity confirmPickup(@PathVariable long packageId) {
+        try {
+            var deliveryPackage = packageService.getPackage(packageId);
+
+            if (deliveryPackage == null)
+                throw new HttpBadRequestException();
+
+            var result = packageService.confirmPickup(packageId);
+
+            if (result) {
+                messagingTemplate.convertAndSendToUser(String.valueOf(deliveryPackage.getUser().getId()), "/notification/package/driver-confirmed", "confirmed");
+                return new ResponseEntity(HttpStatus.OK);
+            }
+            return new ResponseEntity(HttpStatus.NOT_MODIFIED);
+
+        } catch (HttpBadRequestException e) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        } catch (Exception ex) {
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
 }

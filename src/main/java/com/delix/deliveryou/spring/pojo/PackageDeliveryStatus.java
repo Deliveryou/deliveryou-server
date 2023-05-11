@@ -15,10 +15,8 @@ import java.util.Set;
 @Entity
 @Table(name = "package_status")
 public class PackageDeliveryStatus {
-    private static Map<Long, PackageDeliveryStatus> statusMapById = new HashMap<>();
-
     @Id
-    @Column(name = "id")
+    @Column(name = "order_state_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
@@ -30,27 +28,12 @@ public class PackageDeliveryStatus {
 //    @ToString.Exclude
 //    private Set<DeliveryPackage> deliveryPackages = new HashSet<>();
 
-    @PostLoad
-    public void postLoad(){
-        statusMapById.put(id,this);
-        CANCELED = getById(1L);
-        FINISHED = getById(2L);
-        PENDING = getById(3L);
-        DELIVERING = getById(4L);
-        System.out.println("PackageDeliveryStatus Database called");
-    }
-
-    public static PackageDeliveryStatus getById(long id){
-        return statusMapById.get(id);
-    }
-
-
     @Transient
-    public static  PackageDeliveryStatus CANCELED;
+    public static final PackageDeliveryStatus CANCELED = new PackageDeliveryStatus(1, "CANCELED");
     @Transient
-    public static  PackageDeliveryStatus FINISHED;
+    public static final PackageDeliveryStatus FINISHED = new PackageDeliveryStatus(2, "FINISHED");
     @Transient
-    public static  PackageDeliveryStatus PENDING;
+    public static final PackageDeliveryStatus PENDING = new PackageDeliveryStatus(3, "PENDING");
     @Transient
-    public static  PackageDeliveryStatus DELIVERING;
+    public static final PackageDeliveryStatus DELIVERING = new PackageDeliveryStatus(4, "DELIVERING");
 }

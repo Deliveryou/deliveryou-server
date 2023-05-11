@@ -26,7 +26,21 @@ public class ChatService {
         if (chatSession == null)
             throw new HttpBadRequestException();
 
-        int result = chatRepository.addSessionIfNotExist(chatSession);
+        var result = 0;
+
+        try {
+            var sessionId = chatSession.getChatSessionId();
+            var sessionExists = chatRepository.sessionExists(sessionId.getUser().getId(), sessionId.getShipper().getId());
+            if (!sessionExists)
+                chatRepository.save(chatSession);
+            else
+                result = 1;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            result = -1;
+        }
+
         switch (result) {
             case 1:
                 System.out.println("[ChatService] added new session: " + chatSession);
@@ -53,7 +67,7 @@ public class ChatService {
                 (shipper == null || shipper.getRole().getId() != UserRole.SHIPPER.getId()))
             throw new HttpBadRequestException();
 
-        return chatRepository.getChatSession(user, shipper);
+        return chatRepository.getChatSession(userId, shipperId);
     }
 
 }

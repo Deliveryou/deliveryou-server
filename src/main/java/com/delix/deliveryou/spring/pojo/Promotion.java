@@ -5,6 +5,7 @@ package com.delix.deliveryou.spring.pojo;
 //import jakarta.persistence.Id;
 //import jakarta.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -45,6 +46,7 @@ public class Promotion {
     @Column(name = "expire_date")
     private OffsetDateTime expireDate;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "promotion")
     @EqualsAndHashCode.Exclude
     @ToString.Exclude

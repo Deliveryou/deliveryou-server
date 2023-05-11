@@ -11,16 +11,26 @@ public class DeliveryService {
     @Autowired
     private DeliveryPackageRepository packageRepository;
 
-    public boolean savePackage(DeliveryPackage deliveryPackage) {
-        return  packageRepository.savePackage(deliveryPackage);
+    /**
+     * save package
+     * @param deliveryPackage
+     * @return always true, otherwise throw an exception
+     * @throws IllegalArgumentException
+     * @throws org.springframework.dao.OptimisticLockingFailureException
+     */
+    public DeliveryPackage savePackage(DeliveryPackage deliveryPackage) {
+        var entity = packageRepository.save(deliveryPackage);
+        return entity;
     }
 
     /**
-     * @param newDeliveryPackage
-     * @return an updated object, null if fail
+     * update package (save under)
+     * @return non-null object, otherwise throw an exception
+     * @throws IllegalArgumentException
+     * @throws org.springframework.dao.OptimisticLockingFailureException
      */
     public DeliveryPackage updatePackage(DeliveryPackage newDeliveryPackage) {
-        return packageRepository.updatePackage(newDeliveryPackage);
+        return packageRepository.save(newDeliveryPackage);
     }
 
     public DeliveryPackage getPackage(long deliveryPackageId) {
@@ -40,5 +50,9 @@ public class DeliveryService {
         if (userId < 1)
             throw new HttpBadRequestException();
         return packageRepository.getActivePackage(userId);
+    }
+
+    public DeliveryPackage getCurrentPackage(long userId) {
+        return packageRepository.getCurrentPackage(userId);
     }
 }

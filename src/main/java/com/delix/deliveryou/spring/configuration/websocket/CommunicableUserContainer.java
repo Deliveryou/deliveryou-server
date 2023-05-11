@@ -132,6 +132,10 @@ public class CommunicableUserContainer {
         }
     }
 
+    public boolean isOnline(long userId) {
+        return onlineUsers.containsKey(userId);
+    }
+
     public ScheduledExecutorService getExecutorService() {
         return executorService;
     }

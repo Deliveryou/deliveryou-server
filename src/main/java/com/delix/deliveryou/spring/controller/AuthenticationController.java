@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpSession;
 import lombok.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -62,10 +63,14 @@ public class AuthenticationController {
             }
 
             if (asAdmin) {
-                if (userDetails.getUserObject().getRole().getId() != UserRole.ADMIN.getId())
+                var userRoleId = userDetails.getUserObject().getRole().getId();
+                var adminId = UserRole.ADMIN.getId();
+
+                if (userRoleId != adminId) {
                     return new ResponseEntity(JsonResponseBody.build(
                             "Error", "Only allow authentication as [Admin]"
                     ), HttpStatus.UNAUTHORIZED);
+                }
             } else {
                 if (userDetails.getUserObject().getRole().getId() == UserRole.ADMIN.getId())
                     return new ResponseEntity(JsonResponseBody.build(
@@ -262,8 +267,8 @@ public class AuthenticationController {
 
             var deliveryPackage = deliveryService.getPackage(1);
 
-            deliveryPackage.setShipper(shipper);
-            deliveryPackage.setStatus(PackageDeliveryStatus.DELIVERING);
+//            deliveryPackage.setShipper(shipper);
+//            deliveryPackage.setStatus(PackageDeliveryStatus.DELIVERING);
 
             if (deliveryService.updatePackage(deliveryPackage) == null)
                 throw new Exception("cannot update package");
@@ -275,6 +280,8 @@ public class AuthenticationController {
             }
 
             return new ResponseEntity(HttpStatus.OK);
+        } catch (IllegalArgumentException | OptimisticLockingFailureException ex) {
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
@@ -307,6 +314,12 @@ public class AuthenticationController {
                 }
         );
         return res.responseEntity;
+    }
+
+    @CrossOrigin
+    @GetMapping("/pass/{password}")
+    public ResponseEntity getHashPass(@PathVariable String password) {
+        return new ResponseEntity(bCryptPasswordEncoder.encode(password), HttpStatus.OK);
     }
 
 }

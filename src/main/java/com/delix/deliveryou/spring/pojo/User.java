@@ -1,5 +1,6 @@
 package com.delix.deliveryou.spring.pojo;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -15,7 +16,6 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "users")
 public class User {
     @Id
     @Column(name = "user_id")
@@ -47,19 +47,21 @@ public class User {
     @Column(name = "citizen_id")
     private String citizenId;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "filter")
     private MatchingReferences matchingReferences;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinColumn(name = "user_role")
     private UserRole role;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "user")
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private final Set<DeliveryPackage> deliveryPackages1 = new HashSet<>();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "shipper")
     @EqualsAndHashCode.Exclude
     @ToString.Exclude

@@ -8,6 +8,7 @@ import com.delix.deliveryou.spring.pojo.User;
 import com.delix.deliveryou.spring.configuration.JWT.JWTUserDetails;
 import com.delix.deliveryou.spring.pojo.UserRole;
 import com.delix.deliveryou.spring.repository.UserRepository;
+import com.delix.deliveryou.spring.repository.extender.UserRepositoryExtender;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -21,10 +22,10 @@ import java.util.List;
 @Service
 public class UserService implements UserDetailsService {
 
-//    @Autowired
-//    private InMemoryUserDetailsManager inMemoryUserDetailsManager;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private UserRepositoryExtender userRepositoryExtender;
 
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
@@ -32,11 +33,6 @@ public class UserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String phone) {
         // Kiểm tra xem user có tồn tại trong database không?
-        //User user = userRepository.findByUsername(username);
-//        if (user == null) {
-//            throw new UsernameNotFoundException(username);
-//        }
-//        return new CustomUserDetails(user);
         User user = userRepository.getUserByPhone(phone);
 
         if (user == null) {
@@ -146,7 +142,8 @@ public class UserService implements UserDetailsService {
 
             if (result) {
                 // detected diffs
-                return userRepository.updateUser(originalUser);
+                userRepository.save(originalUser);
+                return true;
             }
             return false;
 
@@ -227,13 +224,15 @@ public class UserService implements UserDetailsService {
 
         // normalize filter indexes
         SearchFilterType.normalizeIndexes(filter);
-        return userRepository.getUsersWithFilter(role, filter);
+//        return userRepository.getUsersWithFilter(role, filter);
+          return userRepositoryExtender.getUsersWithFilter(role, filter);
     }
 
     public boolean markUserAsDeleted(long userId, boolean deleted) {
         if (!idExists(userId))
             return false;
-        return userRepository.markUserAsDeleted(userId, deleted);
+        var result =  userRepository.markUserAsDeleted(userId, deleted);
+        return (result > 0);
     }
 
 }

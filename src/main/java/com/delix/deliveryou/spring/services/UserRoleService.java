@@ -1,7 +1,7 @@
 package com.delix.deliveryou.spring.services;
 
 import com.delix.deliveryou.spring.pojo.UserRole;
-import com.delix.deliveryou.spring.repository_database.UserRoleRepository;
+import com.delix.deliveryou.spring.repository.UserRoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

@@ -55,13 +55,6 @@ public class SecurityConfig {
                 .and()
                 .csrf()
                 .disable()
-//                .logout()
-//                .logoutUrl("/logout")
-//                //.deleteCookies("")
-//                .logoutSuccessHandler((request, response, authentication) -> {
-//                    response.setStatus(HttpStatus.OK.value());
-//                })
-//                .and()
                 .authorizeHttpRequests()
                 .requestMatchers("/graphql").permitAll()
                 .requestMatchers("/graphiql").permitAll()
@@ -77,14 +70,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/shared/**").authenticated()
                 .requestMatchers("/api/shipper/**").hasAuthority("SHIPPER")
                 .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+                .requestMatchers("/api/wallet/admin/**").hasAuthority("ADMIN")
+                .requestMatchers("/api/wallet/shipper/**").hasAuthority("SHIPPER")
+                .requestMatchers("/api/wallet/shared/**").hasAnyAuthority("ADMIN", "SHIPPER")
                 .requestMatchers("/websocket/**").permitAll()
                 .requestMatchers("/send").permitAll()
                 .and()
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-
-//        http.getSharedObject(AuthenticationManagerBuilder.class)
-//                .userDetailsService(userService)
-//                .passwordEncoder(bCryptPasswordEncoder);
 
         return http.build();
     }

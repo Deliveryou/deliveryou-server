@@ -1,7 +1,6 @@
 package com.delix.deliveryou.spring.services;
 
 import com.delix.deliveryou.spring.pojo.Promotion;
-import com.delix.deliveryou.spring.pojo.User;
 import com.delix.deliveryou.spring.repository.PromotionRepository;
 import com.delix.deliveryou.spring.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +20,14 @@ public class PromotionService {
         if (!userRepository.isUser(userId))
             return false;
 
-        if (promotionRepository.doesPromotionExist(promotionId))
-            return promotionRepository.canApplyPromotion(userId, promotionId);
+        if (promotionRepository.doesPromotionExist(promotionId)) {
+            try {
+                var result = promotionRepository.canApplyPromotion(userId, promotionId);
+                return result;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
         return false;
     }
 
@@ -34,7 +39,8 @@ public class PromotionService {
         if (!userRepository.isUser(userId))
             return Collections.emptyList();
 
-        return promotionRepository.getAllPromotion()
+        var list  = promotionRepository.getAllPromotion();
+        return list
                 .stream()
                 .filter(promotion -> canApplyPromotion(userId, promotion.getId()))
                 .toList();

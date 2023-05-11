@@ -1,5 +1,6 @@
 package com.delix.deliveryou.spring.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,21 +16,21 @@ import java.util.Set;
 @Entity
 @Table(name = "package_type")
 public class PackageType {
+    @Transient
+    public static final PackageType FOOD = new PackageType(1, "FOOD");
+    @Transient
+    public static final PackageType CLOTHING = new PackageType(2, "CLOTHING");
+    @Transient
+    public static final PackageType ELECTRONICS = new PackageType(3, "ELECTRONICS");
+    @Transient
+    public static final PackageType FRAGILE = new PackageType(4, "FRAGILE");
+    @Transient
+    public static final PackageType OTHER = new PackageType(5, "OTHER");
 
-    private static Map<Long, PackageType> packageTypeMapById = new HashMap<>();
-    private static Map<String, PackageType> packageTypeMapByName = new HashMap<>();
-
-    @Transient
-    public static PackageType FOOD;
-    @Transient
-    public static PackageType CLOTHING;
-    @Transient
-    public static PackageType ELECTRONICS;
-    @Transient
-    public static PackageType FRAGILE;
-    @Transient
-    public static PackageType OTHER;
-
+    public PackageType(long id, String name) {
+        this.id = id;
+        this.name = name;
+    }
 
     @Id
     @Column(name = "id")
@@ -39,45 +40,25 @@ public class PackageType {
     @Column(name = "name")
     private String name;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "packageType")
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private Set<DeliveryPackage> deliveryPackages = new HashSet<>();
 
-    public PackageType getOTHER() {
-        return OTHER;
-    }
+    public static PackageType getTypeByName(String name){
+        if (name == null)
+            return null;
 
-    public PackageType getFRAGILE() {
-        return FRAGILE;
-    }
+        name = name.trim().toUpperCase();
 
-    public PackageType getELECTRONICS() {
-        return ELECTRONICS;
+        switch (name) {
+            case "FOOD": return FOOD;
+            case "CLOTHING": return CLOTHING;
+            case "ELECTRONICS": return ELECTRONICS;
+            case "FRAGILE": return FRAGILE;
+            case "OTHER": return OTHER;
+        }
+        return null;
     }
-
-    public PackageType getCLOTHING() {
-        return CLOTHING;
-    }
-
-    public PackageType getFOOD() {
-        return FOOD;
-    }
-
-    @PostLoad
-    public void postLoad(){
-        packageTypeMapById.put(id, this);
-        packageTypeMapByName.put(name, this);
-        FOOD = getTypeById(1l);
-        CLOTHING = getTypeById(2l);
-        ELECTRONICS = getTypeById(3l);
-        FRAGILE = getTypeById(4l);
-        OTHER = getTypeById(5l);
-        System.out.println("PackageType database called");
-    }
-
-    public static PackageType getTypeById(long id){
-        return packageTypeMapById.get(id);
-    }
-    public static PackageType getTypeByName(String name){return packageTypeMapByName.get(name);}
 }

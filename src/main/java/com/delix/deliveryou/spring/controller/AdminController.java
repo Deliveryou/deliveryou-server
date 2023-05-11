@@ -7,6 +7,7 @@ import com.delix.deliveryou.spring.pojo.UserRole;
 import com.delix.deliveryou.spring.services.PackageService;
 import com.delix.deliveryou.spring.services.UserService;
 import com.delix.deliveryou.utility.JsonResponseBody;
+import org.hibernate.mapping.Collection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
@@ -14,7 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.delix.deliveryou.spring.model.SearchFilterType;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -26,14 +29,16 @@ public class AdminController {
     @Autowired
     private DeliveryChargeAdvisor.Advisor advisor;
 
-    @PostMapping("/all-regular-users")
+    @PostMapping(value = "/all-regular-users")
     @CrossOrigin
     public ResponseEntity allRegularUsers(@RequestBody SearchFilter filter) {
         try {
             List<User> list = userService.getUsersWithFilter(UserRole.USER, filter);
+
             return new ResponseEntity(list, HttpStatus.OK);
 
         } catch (Exception e) {
+            e.printStackTrace();
             return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
