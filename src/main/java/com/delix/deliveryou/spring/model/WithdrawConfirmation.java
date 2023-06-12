@@ -1,4 +1,4 @@
-package com.delix.deliveryou.carrier;
+package com.delix.deliveryou.spring.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -6,10 +6,10 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @ToString
-public class LogInCarrier {
-    private String phone;
-    private String password;
+public class WithdrawConfirmation {
+    long withdrawId;
+    long adminId;
 }

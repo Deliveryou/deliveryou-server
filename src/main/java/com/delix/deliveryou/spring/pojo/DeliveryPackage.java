@@ -1,5 +1,6 @@
 package com.delix.deliveryou.spring.pojo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import jakarta.persistence.*;
 import lombok.*;
@@ -61,6 +62,7 @@ public class DeliveryPackage {
     private PackageType packageType;
 
     @Column(name = "creation_date")
+    @JsonFormat(pattern = "yyyy-MM-dd hh:mm:ss")
     private OffsetDateTime creationDate;
 
     @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)

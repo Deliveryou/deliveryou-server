@@ -70,4 +70,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("select d from User d where d.role.name = 'SHIPPER' and d.phone = :phone")
     List<User> getDriverWithPhone(@Param("phone") String phone);
+
+    @Query("select count(u) from User u where u.role.id = :roleId")
+    int countSystemUsersWithRole(@Param("roleId") long roleId);
 }

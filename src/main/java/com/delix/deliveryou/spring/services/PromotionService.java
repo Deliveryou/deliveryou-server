@@ -49,4 +49,25 @@ public class PromotionService {
     public Promotion loadPromotion(long id) {
         return promotionRepository.getPromotion(id);
     }
+
+    public boolean canUsePromoCode(String code) {
+        if (code == null)
+            return false;
+        code = code.trim();
+        if (code.length() != 10)
+            return false;
+        return promotionRepository.canUsePromoCode(code);
+    }
+
+    public long addPromotion(Promotion promotion) {
+        if (promotion == null || !canUsePromoCode(promotion.getPromoCode()))
+            return 0;
+
+        var saved = promotionRepository.save(promotion);
+        return saved.getId(); // return id
+    }
+
+    public List<Promotion> searchForPromotions(String keywords) {
+        return promotionRepository.searchForPromos(keywords);
+    }
 }

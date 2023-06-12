@@ -3,7 +3,9 @@ package com.delix.deliveryou.spring.controller;
 import com.delix.deliveryou.exception.HttpBadRequestException;
 import com.delix.deliveryou.exception.LogicViolationException;
 import com.delix.deliveryou.spring.configuration.websocket.CommunicableUserContainer;
+import com.delix.deliveryou.spring.model.SimpleRating;
 import com.delix.deliveryou.spring.pojo.User;
+import com.delix.deliveryou.spring.services.PackageService;
 import com.delix.deliveryou.spring.services.UserService;
 import com.delix.deliveryou.utility.JsonResponseBody;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,8 @@ public class UserController {
     private CommunicableUserContainer userContainer;
     @Autowired
     private UserService userService;
+    @Autowired
+    private PackageService packageService;
 
     @CrossOrigin
     @GetMapping("/i-am-online/{userId}")
@@ -73,6 +77,39 @@ public class UserController {
     }
 
     @CrossOrigin
+    @PostMapping("/rate-shipper/{packageId}")
+    public ResponseEntity rateShipper(@RequestBody SimpleRating simpleRating, @PathVariable("packageId") long packageId) {
+        try {
+            var deliveryPackage = packageService.getPackage(packageId);
+
+            var result = userService.rateShipper(simpleRating, deliveryPackage);
+
+            return new ResponseEntity((result) ? HttpStatus.OK : HttpStatus.NOT_MODIFIED);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @CrossOrigin
+    @GetMapping("/can-rate-shipper/{packageId}")
+    public ResponseEntity canRateShipper(@PathVariable("packageId") long packageId) {
+        try {
+            var result = userService.canRateShipper(packageId);
+
+            if (result)
+                return new ResponseEntity(HttpStatus.OK);
+
+            return new ResponseEntity(HttpStatus.NOT_ACCEPTABLE);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @CrossOrigin
     @PostMapping("/update-user")
     public ResponseEntity updateUser(@RequestBody User updatedUser) {
         try {
@@ -83,8 +120,10 @@ public class UserController {
             ), HttpStatus.OK);
 
         } catch (HttpBadRequestException ex) {
+            ex.printStackTrace();
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
+            e.printStackTrace();
             return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

@@ -11,6 +11,7 @@ import com.delix.deliveryou.spring.configuration.websocket.CommunicableUserConta
 import com.delix.deliveryou.spring.pojo.*;
 import com.delix.deliveryou.spring.services.ChatService;
 import com.delix.deliveryou.spring.services.DeliveryService;
+import com.delix.deliveryou.spring.services.PackageService;
 import com.delix.deliveryou.spring.services.UserService;
 import com.delix.deliveryou.utility.JsonResponseBody;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,6 +50,36 @@ public class AuthenticationController {
     private UserService userService;
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
+    @Autowired
+    private SendBird sendBird;
+
+    @CrossOrigin
+    @PostMapping("/register")
+    public ResponseEntity register(@RequestBody User user) {
+        try {
+            String phone = user.getPhone();
+            String password = user.getPassword();
+
+            var savedUser = userService.addUser(user, UserRole.USER);
+
+            sendBird.createUser(
+                    new SendBirdUser.RequestUser(String.valueOf(savedUser.getId()), savedUser.getFirstName() + " " + savedUser.getLastName(), savedUser.getProfilePictureUrl()),
+                    responseUser -> {
+                        System.out.println(">>>>>>>>> Sendbird: created new user");
+                    },
+                    exception -> {
+                        System.out.println(">>>>>>>>> Sendbird error: failed to create user");
+                        exception.printStackTrace();
+                    }
+            );
+
+            return doLogin(new LogInCarrier(phone, password), false);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     private ResponseEntity doLogin(LogInCarrier logInCarrier, boolean asAdmin) {
         // Xác thực từ username và password.
@@ -145,12 +176,19 @@ public class AuthenticationController {
     }
 
 
+    @Autowired
+    private PackageService packageService;
 
     @CrossOrigin
     @PostMapping("auth-test")
     public ResponseEntity test() {
-        System.out.println("called");
-        return new ResponseEntity(HttpStatus.OK);
+        try {
+            var list = packageService.getAllPackagesInMonth(5, 2023, 2);
+            return new ResponseEntity(list, HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Autowired
@@ -159,8 +197,8 @@ public class AuthenticationController {
     @CrossOrigin
     @GetMapping("/add")
     public ResponseEntity add() {
-        container.registerAsActive(1l);
-        return new ResponseEntity(HttpStatus.OK);
+        var user = (JWTUserDetails) userService.loadUserById(1l);
+        return new ResponseEntity(user.getUser() ,HttpStatus.OK);
     }
 
     @Autowired
@@ -246,8 +284,6 @@ public class AuthenticationController {
     }
 
     // matched -> send to all suitable shippers -> if accept
-    @Autowired
-    private SendBird sendBird;
     @Autowired
     private ObjectMapper objectMapper;
 

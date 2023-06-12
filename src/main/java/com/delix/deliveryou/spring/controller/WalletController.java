@@ -1,16 +1,16 @@
 package com.delix.deliveryou.spring.controller;
 
 import com.delix.deliveryou.exception.HttpBadRequestException;
-import com.delix.deliveryou.spring.services.UserService;
+import com.delix.deliveryou.spring.pojo.Withdraw;
 import com.delix.deliveryou.spring.services.WalletService;
-import com.delix.deliveryou.utility.JsonResponseBody;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collection;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -21,6 +21,8 @@ public class WalletController {
 
     @Autowired
     private WalletService walletService;
+    @Value("${wallet.conversion-rate}")
+    private int CONVERSION_RATE;
 
     @CrossOrigin
     @GetMapping("/shared/get-info/{shipperId}")
@@ -116,6 +118,67 @@ public class WalletController {
 
         } catch (Exception e) {
             e.printStackTrace();
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @CrossOrigin
+    @PostMapping("/shipper/withdraw-request")
+    public ResponseEntity withdrawRequest(@RequestBody Map<String, String> map) {
+        try {
+            long walletId = Long.parseLong(map.get("walletId"));
+            int widthdrawCredits = Integer.parseInt(map.get("widthdrawCredits"));
+
+            var wallet = walletService.getWalletById(walletId);
+
+            if (wallet == null || !walletService.canCreateWithdrawRequest(walletId))
+                throw new HttpBadRequestException();
+
+            if (widthdrawCredits < (10000 / CONVERSION_RATE) || widthdrawCredits > wallet.getCredit())
+                throw new HttpBadRequestException();
+
+            var withdraw = new Withdraw();
+            withdraw.setWallet(wallet);
+            withdraw.setAmount(widthdrawCredits);
+            withdraw.setFinished(false);
+            withdraw.setValidWithinDays(7);
+            withdraw.setDate(OffsetDateTime.now());
+
+            var result = walletService.createWithdraw(withdraw);
+
+            return new ResponseEntity(result, HttpStatus.OK);
+
+        } catch (HttpBadRequestException | NumberFormatException e) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @CrossOrigin
+    @GetMapping("/shared/get-withdraw-request/{walletId}")
+    public ResponseEntity getWithdrawRequest(@PathVariable long walletId) {
+        try {
+            var withdraw = walletService.getPendingWithdraw(walletId);
+            System.out.println(">>>>>>> withdraw: " + withdraw);
+            if (withdraw != null)
+                return new ResponseEntity(withdraw, HttpStatus.OK);
+
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        } catch (Exception e) {
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @CrossOrigin
+    @GetMapping("/shared/transaction-history-by-wallet-id/{walletId}")
+    public ResponseEntity transactionHistoryByWalletId(@PathVariable long walletId) {
+        try {
+            var list = walletService.getTransactionHistoriesByWalletId(walletId);
+
+            return new ResponseEntity((list != null && list.size() > 0) ? list : Collections.emptyList(), HttpStatus.OK);
+        } catch (Exception e) {
             return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

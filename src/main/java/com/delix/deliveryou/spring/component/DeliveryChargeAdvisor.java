@@ -127,6 +127,10 @@ public class DeliveryChargeAdvisor {
                     ));
         }
 
+        private double roundDown(double value) {
+            return Math.floor(value / 1000) * 1000;
+        }
+
         public AdvisorResponse getAdvisorPrice(LocationIQ.Coordinate startingPoint, LocationIQ.Coordinate destination, LocalTime creationTime) {
             final AdvisorResponse ERROR_VALUE = null;
 
@@ -166,7 +170,8 @@ public class DeliveryChargeAdvisor {
                         break;
                     }
                 }
-                return new AdvisorResponse(calculatePrice, originalDistance);
+
+                return new AdvisorResponse(roundDown(calculatePrice), originalDistance);
             } catch (Exception e) {
                 return ERROR_VALUE;
             }

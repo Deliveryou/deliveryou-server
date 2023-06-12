@@ -32,6 +32,14 @@ public class CommunicableUserContainer {
         enableLogs = false;
     }
 
+    public long countOnlineShippers() {
+        return shippers.size();
+    }
+
+    public long countOnlineUsers() {
+        return regularUsers.size();
+    }
+
     private boolean removeUserWithRole(long userId) {
         try {
             boolean contained = false;

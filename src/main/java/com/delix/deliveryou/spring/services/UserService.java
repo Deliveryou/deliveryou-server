@@ -4,9 +4,10 @@ import com.delix.deliveryou.exception.HttpBadRequestException;
 import com.delix.deliveryou.exception.LogicViolationException;
 import com.delix.deliveryou.spring.model.SearchFilter;
 import com.delix.deliveryou.spring.model.SearchFilterType;
-import com.delix.deliveryou.spring.pojo.User;
+import com.delix.deliveryou.spring.model.SimpleRating;
+import com.delix.deliveryou.spring.pojo.*;
 import com.delix.deliveryou.spring.configuration.JWT.JWTUserDetails;
-import com.delix.deliveryou.spring.pojo.UserRole;
+import com.delix.deliveryou.spring.repository.RatingRepository;
 import com.delix.deliveryou.spring.repository.UserRepository;
 import com.delix.deliveryou.spring.repository.extender.UserRepositoryExtender;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
@@ -29,6 +31,8 @@ public class UserService implements UserDetailsService {
 
     @Autowired
     private BCryptPasswordEncoder bCryptPasswordEncoder;
+    @Autowired
+    private RatingRepository ratingRepository;
 
     @Override
     public UserDetails loadUserByUsername(String phone) {
@@ -233,6 +237,102 @@ public class UserService implements UserDetailsService {
             return false;
         var result =  userRepository.markUserAsDeleted(userId, deleted);
         return (result > 0);
+    }
+
+    public int countSystemUsersWithRole(long roleId) {
+        return userRepository.countSystemUsersWithRole(roleId);
+    }
+
+    public User addUser(User user, UserRole userRole) {
+        if (user == null || userRole == null || phoneExists(user.getPhone()))
+            throw new HttpBadRequestException();
+
+        if (userRole.getId() == UserRole.SHIPPER.getId()) {
+            var mr = new MatchingReferences();
+            mr.setMatchingRadius(999);
+            mr.setMinimumDeliveryPrice(10000);
+            mr.setMaximumDeliveryDistance(999);
+            user.setMatchingReferences(mr);
+            user.setAverageRating(0f);
+        }
+
+        user.setRole(userRole);
+        user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+
+        return userRepository.save(user);
+    }
+
+    /**
+     *
+     * @param simpleRating
+     * @param deliveryPackage
+     * @return boolean values, throws error if failed to save new Rating
+     */
+    public boolean rateShipper(SimpleRating simpleRating, DeliveryPackage deliveryPackage) {
+        if (simpleRating == null || deliveryPackage == null)
+            return false;
+
+        if (simpleRating.getRating() % 1 != 0)
+            simpleRating.setRating((float) Math.floor(simpleRating.getRating()));
+
+        if (simpleRating.getRating() < 1)
+            simpleRating.setRating(1);
+        else if (simpleRating.getRating() > 5)
+            simpleRating.setRating(5);
+
+        var rating = new Rating(
+            deliveryPackage,
+                simpleRating.getContent(),
+                simpleRating.getRating(),
+                false,
+                LocalDateTime.now()
+        );
+
+        // save new rating
+        ratingRepository.save(rating);
+
+        var shipper = deliveryPackage.getShipper();
+
+        var currentShipperRatingCount = ratingRepository.countRatingOfShipper(shipper.getId());
+
+        if (shipper.getAverageRating() == null)
+            shipper.setAverageRating(0f);
+
+        var newAvg = (shipper.getAverageRating() * (currentShipperRatingCount - 1) + simpleRating.getRating()) / currentShipperRatingCount;
+
+        shipper.setAverageRating(newAvg);
+
+        // New average = ((Current average * Current count) + New rating) / (Current count + 1)
+        // update average rating
+        userRepository.save(shipper);
+
+        return true;
+    }
+
+    public boolean canRateShipper(long packageId) {
+        if (packageId < 1)
+            return false;
+
+        return ratingRepository.canRateShipper(packageId);
+    }
+
+    public List<Rating> getRatingList() {
+        return ratingRepository.getAll();
+    }
+
+    public boolean markedRating(long ratingId, boolean value) {
+        if (ratingId < 1)
+            return false;
+
+        var rating = ratingRepository.getById(ratingId);
+
+        if (rating == null || rating.isMarked() == value)
+            return false;
+
+        rating.setMarked(value);
+
+        ratingRepository.save(rating);
+        return true;
     }
 
 }

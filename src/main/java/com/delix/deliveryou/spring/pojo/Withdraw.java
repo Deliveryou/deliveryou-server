@@ -1,10 +1,13 @@
 package com.delix.deliveryou.spring.pojo;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "withdraw")
@@ -12,7 +15,7 @@ import lombok.ToString;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class Widthdraw {
+public class Withdraw {
     @Id
     @Column(name = "withdraw_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,8 +31,9 @@ public class Widthdraw {
     @Column(name = "finished")
     private boolean finished;
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     @Column(name = "date")
-    private double date;
+    private OffsetDateTime date;
 
     @Column(name = "is_valid_within_days")
     private double validWithinDays;

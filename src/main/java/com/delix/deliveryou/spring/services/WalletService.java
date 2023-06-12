@@ -1,12 +1,15 @@
 package com.delix.deliveryou.spring.services;
 
-import com.delix.deliveryou.spring.pojo.User;
-import com.delix.deliveryou.spring.pojo.Wallet;
-import com.delix.deliveryou.spring.repository.UserRepository;
-import com.delix.deliveryou.spring.repository.WalletRepository;
+import com.delix.deliveryou.spring.configuration.JWT.JWTUserDetails;
+import com.delix.deliveryou.spring.model.WalletDeposit;
+import com.delix.deliveryou.spring.model.WithdrawConfirmation;
+import com.delix.deliveryou.spring.pojo.*;
+import com.delix.deliveryou.spring.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Service
@@ -15,6 +18,17 @@ public class WalletService {
     private WalletRepository walletRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private WithdrawRepository withdrawRepository;
+    @Autowired
+    private TransactionHistoryRepository transactionHistoryRepository;
+    @Autowired
+    private UserService userService;
+    @Value("${wallet.conversion-rate}")
+    private int CONVERSION_RATE;
+    @Autowired
+    private RatingRepository ratingRepository;
+
 
     public Wallet getWalletOfShipper(long shipperId) {
         return walletRepository.getWalletOfShipper(shipperId);
@@ -35,23 +49,23 @@ public class WalletService {
         return userRepository.getDriverWithPhone(phone);
     }
 
-    public boolean increaseCredit(long walletId, int amount) {
-        if (amount <= 0)
+    public boolean increaseCredit(long walletId, double amount) {
+        if (amount <= 0 || walletId < 1)
             return false;
 
         var result = walletRepository.increaseWalletCredit(walletId, amount);
         return result > 0;
     }
 
-    public boolean decreaseCredit(long walletId, int amount) {
-        if (amount <= 0 || !canDecreaseCredit(walletId, amount))
+    public boolean decreaseCredit(long walletId, double amount) {
+        if (amount <= 0 || walletId < 1 || !canDecreaseCredit(walletId, amount))
             return false;
 
         var result = walletRepository.decreaseWalletCredit(walletId, amount);
         return result > 0;
     }
 
-    public boolean canDecreaseCredit(long walletId, int amount) {
+    public boolean canDecreaseCredit(long walletId, double amount) {
         return walletRepository.canDecreaseWalletCredit(walletId, amount);
     }
 
@@ -76,7 +90,109 @@ public class WalletService {
             return false;
         }
 
+        // save log of sender
+        transactionHistoryRepository.save(new TransactionHistory(
+                senderWallet,
+                senderWallet.getShipper(),
+                -amount,
+                "Gifted " + amount + " credits",
+                OffsetDateTime.now()
+        ));
+
+        // save log of recipient
+        transactionHistoryRepository.save(new TransactionHistory(
+                recipientWallet,
+                senderWallet.getShipper(),
+                amount,
+                "Received " + amount + " credits",
+                OffsetDateTime.now()
+        ));
+
         return true;
     }
+
+    public Withdraw createWithdraw(Withdraw widthdraw) {
+        return withdrawRepository.save(widthdraw);
+    }
+
+    public boolean canCreateWithdrawRequest(long walletId) {
+        return withdrawRepository.canCreateWidthdraw(walletId);
+    }
+
+    public Withdraw getPendingWithdraw(long walletId) {
+        return withdrawRepository.getPendingWithdraw(walletId);
+    }
+
+    public List<Withdraw> getAllPendingWithdraw() {
+        return withdrawRepository.getAllPendingWithdraw();
+    }
+
+    public List<TransactionHistory> getTransactionHistoriesByWalletId(long walletId) {
+        return transactionHistoryRepository.getHistoriesByWalletId(walletId);
+    }
+
+    public boolean deposit(WalletDeposit walletDeposit) {
+        if (walletDeposit == null || walletDeposit.getAmount() < 1 || walletDeposit.getAdminId() < 1 || walletDeposit.getPhotoUrl() == null || walletDeposit.getWalletId() < 1)
+            return false;
+
+        var admin = ((JWTUserDetails) userService.loadUserById(walletDeposit.getAdminId())).getUser();
+
+        if (admin == null)
+            return false;
+
+        var wallet = getWalletById(walletDeposit.getWalletId());
+
+        if (wallet == null)
+            return false;
+
+        var result = walletRepository.deposit(walletDeposit.getWalletId(), walletDeposit.getAmount());
+
+        if (result > 0) {
+            transactionHistoryRepository.save(new TransactionHistory(
+                    wallet,
+                    admin,
+                    Math.ceil(walletDeposit.getAmount() / CONVERSION_RATE),
+                    "Deposited " + walletDeposit.getAmount(),
+                    walletDeposit.getPhotoUrl(),
+                    OffsetDateTime.now()
+            ));
+            return true;
+        }
+        return false;
+    }
+
+    public Withdraw getWithdrawById(long id) {
+        return withdrawRepository.getById(id);
+    }
+
+    public boolean confirmWithdraw( WithdrawConfirmation withdrawConfirmation) {
+        if (withdrawConfirmation == null || withdrawConfirmation.getAdminId() < 1 || withdrawConfirmation.getWithdrawId() < 1)
+            return false;
+
+        var withdraw = getWithdrawById(withdrawConfirmation.getWithdrawId());
+
+        if (withdraw == null)
+            return false;
+
+        var admin = ((JWTUserDetails) userService.loadUserById(withdrawConfirmation.getAdminId())).getUser();
+
+        if (admin == null)
+            return false;
+
+        var result = withdrawRepository.confirmWithdraw(withdraw.getId());
+
+        if (result > 0) {
+            transactionHistoryRepository.save(new TransactionHistory(
+                    withdraw.getWallet(),
+                    admin,
+                    -withdraw.getAmount(),
+                    "Withdrawed " + withdraw.getAmount(),
+                    OffsetDateTime.now()
+            ));
+            return true;
+        }
+        return false;
+    }
+
 
 }
