@@ -49,6 +49,9 @@ public class User {
     @Column(name = "citizen_id")
     private String citizenId;
 
+    @Column(name = "email")
+    private String email;
+
     @Column(name = "average_rating")
     private Float averageRating;
 
