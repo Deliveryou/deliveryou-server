@@ -33,6 +33,8 @@ public class UserService implements UserDetailsService {
     private BCryptPasswordEncoder bCryptPasswordEncoder;
     @Autowired
     private RatingRepository ratingRepository;
+    @Autowired
+    private MailService mailService;
 
     @Override
     public UserDetails loadUserByUsername(String phone) {
@@ -233,10 +235,33 @@ public class UserService implements UserDetailsService {
     }
 
     public boolean markUserAsDeleted(long userId, boolean deleted) {
-        if (!idExists(userId))
+        var user = ((JWTUserDetails) loadUserById(userId)).getUser();
+
+        if (user == null)
             return false;
+
         var result =  userRepository.markUserAsDeleted(userId, deleted);
-        return (result > 0);
+
+        if (result > 0) {
+            if (user.getEmail() != null) {
+
+                new Thread(() -> {
+                    String message = "Your account has been";
+                    if (deleted) {
+                        message += " banned!\nAll of your app operations will be rejected from your account.\nIf you believe this is a mistake, contact us at 08xxxxxxxx for detailed information.";
+                    } else {
+                        message += " unbanned!\nYou can continue to use our application service!";
+                    }
+                    mailService.sendSimpleMessage(
+                            user.getEmail(),
+                            "Deliveryou account notification service",
+                            message
+                    );
+                }).start();
+            }
+            return true;
+        }
+        return false;
     }
 
     public int countSystemUsersWithRole(long roleId) {
