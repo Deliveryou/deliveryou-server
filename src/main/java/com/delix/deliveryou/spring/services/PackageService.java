@@ -212,4 +212,9 @@ public class PackageService {
         return Collections.emptyList();
     }
 
+    public boolean cancelWaiting(long packageId) {
+        var result = packageRepository.delete(packageId);
+        return result > 0;
+    }
+
 }

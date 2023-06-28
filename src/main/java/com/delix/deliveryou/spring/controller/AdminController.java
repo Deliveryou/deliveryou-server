@@ -9,10 +9,7 @@ import com.delix.deliveryou.spring.model.WithdrawConfirmation;
 import com.delix.deliveryou.spring.pojo.Promotion;
 import com.delix.deliveryou.spring.pojo.User;
 import com.delix.deliveryou.spring.pojo.UserRole;
-import com.delix.deliveryou.spring.services.PackageService;
-import com.delix.deliveryou.spring.services.PromotionService;
-import com.delix.deliveryou.spring.services.UserService;
-import com.delix.deliveryou.spring.services.WalletService;
+import com.delix.deliveryou.spring.services.*;
 import com.delix.deliveryou.utility.JsonResponseBody;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.delix.deliveryou.spring.model.SearchFilterType;
 
+import java.time.DateTimeException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +42,10 @@ public class AdminController {
     private WalletService walletService;
     @Autowired
     private SendBird sendBird;
+    @Autowired
+    private SystemService systemService;
+    @Autowired
+    private LogService logService;
 
     @PostMapping(value = "/all-regular-users")
     @CrossOrigin
@@ -255,6 +257,30 @@ public class AdminController {
             userService.markedRating(ratingId, marked);
 
             return new ResponseEntity(HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @CrossOrigin
+    @GetMapping("/set-commission-rate/aid={adminId}&sr={systemRate}")
+    public ResponseEntity setCommissionRate(@PathVariable("adminId") long adminId, @PathVariable("systemRate") int systemRate) {
+        try {
+            var result = systemService.updateCommissionRate(adminId, systemRate);
+            return new ResponseEntity((result) ? HttpStatus.OK : HttpStatus.NOT_ACCEPTABLE);
+        } catch (Exception e) {
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @CrossOrigin
+    @GetMapping("/get-system-logs/{milliseconds}")
+    public ResponseEntity getSystemLogs(@PathVariable long milliseconds) {
+        try {
+            var list = logService.getSystemLogs(milliseconds);
+            return new ResponseEntity(list, HttpStatus.OK);
+        } catch (DateTimeException e) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
         }

@@ -96,4 +96,9 @@ public interface DeliveryPackageRepository extends JpaRepository<DeliveryPackage
 
     @Query("select dp.packageType.name, count(dp.id) from DeliveryPackage dp group by dp.packageType.name")
     List<Object[]> categoryDistribution();
+
+    @Modifying
+    @Transactional
+    @Query("delete DeliveryPackage where id = :id")
+    int delete(@Param("id") long id);
 }
