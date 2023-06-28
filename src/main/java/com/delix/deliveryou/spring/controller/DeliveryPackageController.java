@@ -396,4 +396,16 @@ public class DeliveryPackageController {
         }
     }
 
+    @CrossOrigin
+    @GetMapping("/user/cancel-waiting/{packageId}")
+    public ResponseEntity cancelWaiting(@PathVariable long packageId) {
+        try {
+            var result = packageService.cancelWaiting(packageId);
+
+            return new ResponseEntity((result) ? HttpStatus.OK : HttpStatus.NOT_MODIFIED);
+        } catch (Exception ex) {
+            return new ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 }
